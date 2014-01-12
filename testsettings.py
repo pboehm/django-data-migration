@@ -7,6 +7,7 @@ DATABASES = {
 
 INSTALLED_APPS = (
     'data_migration',
+    'data_migration.test_apps.blog',
 )
 
 

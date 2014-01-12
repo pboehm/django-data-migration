@@ -47,13 +47,15 @@ class ImporterTest(TestCase):
         self.assertEqual(len(Migration.__subclasses__()), 1)
 
 
+from .test_apps.blog.models import Blog, Category
+
 class MigratorTest(TestCase):
 
-    @install_apps(['valid_a', 'valid_b'])
+    @install_apps(['valid_a', 'blog'])
     def test_topological_sorting(self):
         Importer.import_all()
 
         _sorted = Migrator.sorted_migrations()
         self.assertEqual(_sorted[0].model, User)
-        self.assertEqual(_sorted[1].model, Group)
-
+        self.assertEqual(_sorted[1].model, Blog)
+        self.assertEqual(_sorted[2].model, Category)
