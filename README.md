@@ -1,4 +1,4 @@
-django-data-migration
+django-data-migration [![Build Status](https://travis-ci.org/pboehm/django-data-migration.png?branch=master)](https://travis-ci.org/pboehm/django-data-migration)
 =====================
 
 `django-data-migration` is a reusable Django app that migrates your legacy data
