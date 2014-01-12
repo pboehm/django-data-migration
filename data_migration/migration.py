@@ -110,10 +110,10 @@ class Migration(object):
 
         check = self.migration_required()
         if check == False:
-            print "%s has already been migrated, skip it!" % self
+            print("%s has already been migrated, skip it!" % self)
             return None
 
-        print "Migrating %s" % self
+        print("Migrating %s" % self)
 
         self.check_migration() # check the configuration of the Migration
         connection = self.open_db_connection()
@@ -165,7 +165,7 @@ class Migration(object):
             self.hook_after_save(instance, row)
 
         self.hook_after_all()
-        print ""
+        print("")
 
 
     @classmethod
@@ -206,7 +206,7 @@ class Migration(object):
 
             self.hook_after_save(instance, row)
 
-        print ""
+        print("")
 
 
     @classmethod
@@ -255,7 +255,7 @@ class Migration(object):
         criteria = { desc['attr']: value }
         try:
             return desc['klass'].objects.get(**criteria)
-        except self.model.DoesNotExist, e:
+        except self.model.DoesNotExist as e:
             if desc['skip_missing']:
                 return None
             else:
@@ -278,7 +278,7 @@ class Migration(object):
                 return None
 
             return False
-        except AppliedMigration.DoesNotExist, e:
+        except AppliedMigration.DoesNotExist as e:
             return True
 
 
@@ -345,7 +345,7 @@ class Importer(object):
                 for attr in attrlist:
                     globals()[attr] = getattr(m, attr)
 
-            except ImportError, e:
+            except ImportError as e:
                 pass
 
 
@@ -369,18 +369,18 @@ class Migrator(object):
                 for migration in self.sorted_migrations():
 
                     if migration.skip is True:
-                        print "%s: will be skipped" % migration
+                        print("%s: will be skipped" % migration)
                         continue
 
                     if logquery:
-                        print ("Query for %s: " % (migration)) + migration.query
+                        print(("Query for %s: " % (migration)) + migration.query)
 
                     migration.migrate()
 
                 if not commit:
                     raise NotCommitBreak("nothing has changed")
 
-        except NotCommitBreak, e:
+        except NotCommitBreak as e:
             pass
 
 

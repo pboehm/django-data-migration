@@ -7,6 +7,15 @@ SQL query that transforms your data fromthe old schema into your model
 structure. Dependencies between these migrations will be resolved
 automatically. Give it a try!
 
+## Requirements
+
+This extension is tested automatically against:
+
+* Django 1.5
+* Django 1.6
+
+on Python 2.7, 3.2 and 3.3.
+
 ## Status of project
 
 This app got extracted out of a production system and it requires some work in
