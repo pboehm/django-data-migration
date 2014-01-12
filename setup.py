@@ -18,7 +18,7 @@ setup(
     url='https://github.com/pboehm/django-data-migration',
     author='Philipp Böhm',
     author_email='dev@pboehm.org',
-    install_requires=['networkx >= 1.8.0'],
+    install_requires=['networkx >= 1.8.0', 'future'],
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',

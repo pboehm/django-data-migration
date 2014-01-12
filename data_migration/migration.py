@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+from __future__ import unicode_literals
+from future.builtins import str
 
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db.models import Model
@@ -130,7 +133,7 @@ class Migration(object):
             # do the normal migration method
             self.process_cursor(cursor, fields)
 
-            AppliedMigration.objects.create(classname=unicode(self))
+            AppliedMigration.objects.create(classname=str(self))
 
 
     @classmethod
@@ -219,8 +222,8 @@ class Migration(object):
         constructor_data = {}
         m2ms = {}
 
-        for fieldname, data in datarow.iteritems():
-            if self.column_description.has_key(fieldname):
+        for fieldname, data in datarow.items():
+            if fieldname in self.column_description:
                 desc = self.column_description[fieldname]
 
                 if desc['exclude'] == True:
@@ -264,7 +267,7 @@ class Migration(object):
 
     @classmethod
     def create_m2ms(self, instance, m2ms):
-        for field, values in m2ms.iteritems():
+        for field, values in m2ms.items():
             instance.__getattribute__(field).add(*values)
 
 
@@ -272,7 +275,7 @@ class Migration(object):
     def migration_required(self):
         """checks if the migration has already been applied"""
         try:
-            AppliedMigration.objects.get(classname=unicode(self))
+            AppliedMigration.objects.get(classname=str(self))
 
             if self.allow_updates:
                 return None

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+from future.builtins import str
+
 from django.test import TestCase
 from django.conf import settings
 from django.contrib.auth.models import User, Group
@@ -35,7 +38,7 @@ class ImporterTest(TestCase):
         classes = Migration.__subclasses__()
 
         self.assertEqual(len(classes), 1)
-        self.assertTrue("valid_a" in unicode(classes[0]))
+        self.assertTrue("valid_a" in str(classes[0]))
         self.assertEqual(classes[0].model, User)
 
     @install_apps(['valid_a'])
