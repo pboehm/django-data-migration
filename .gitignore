@@ -5,4 +5,4 @@ local_settings.py
 .DS_Store
 *.swp
 dist/
-django_data_migration.egg-info/
+*.egg-info/
