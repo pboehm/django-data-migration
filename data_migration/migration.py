@@ -22,15 +22,10 @@ def is_a(klass, search_attr, fk=False, m2m=False, o2o=False,
 
 
 class Migration(object):
-    """Baseclass for the data migration"""
+    """Baseclass for each data migration"""
 
     abstract = False
     skip = False
-
-    # Database settings, should be right for most of uses
-    db_host = None
-    db_user = None
-    db_password = None
 
     # model class the migration creates instances for
     model = None
@@ -310,3 +305,128 @@ class Migration(object):
         if not ( isinstance(self.query, str) and "SELECT" in self.query ):
             raise ImproperlyConfigured(
                     '%s: `model` has to be a string containing SELECT' % self)
+
+
+from django.conf import settings
+
+class Importer(object):
+    """
+    this class encapsulates all the logic it needs to find all existing data
+    migrations accross all installed apps
+    """
+
+    @classmethod
+    def installed_apps(self):
+        return settings.INSTALLED_APPS
+
+    @classmethod
+    def possible_existing_migrations(self):
+        return [ app + ".data_migration_spec"
+            for app in  self.installed_apps() ]
+
+    @classmethod
+    def import_all(self, excludes=[]):
+        """
+        this does an `from X import *` for all existing migration specs
+        """
+        for app in self.possible_existing_migrations():
+
+            matches = [ ex for ex in excludes if ex in app ]
+            if len(matches) > 0:
+                continue
+
+            try:
+                m = __import__(app)
+                try:
+                    attrlist = m.__all__
+                except AttributeError:
+                    attrlist = dir(m)
+
+                for attr in attrlist:
+                    globals()[attr] = getattr(m, attr)
+
+            except ImportError, e:
+                pass
+
+
+class NotCommitBreak(Exception):
+    pass
+
+
+from django.db import transaction
+import networkx as nx
+
+class Migrator(object):
+    """
+    this class encapsulates the migration process for all existing migration
+    classes. This is normally used by the migrate_this_shit management command
+    """
+
+    @classmethod
+    def migrate(self, commit=False, log_queries=False):
+        try:
+            with transaction.commit_on_success():
+                for migration in self.sorted_migrations():
+
+                    if migration.skip is True:
+                        print "%s: will be skipped" % migration
+                        continue
+
+                    if logquery:
+                        print ("Query for %s: " % (migration)) + migration.query
+
+                    migration.migrate()
+
+                if not commit:
+                    raise NotCommitBreak("nothing has changed")
+
+        except NotCommitBreak, e:
+            pass
+
+
+    @classmethod
+    def sorted_migrations(self):
+        return self.__sort_based_on_dependency(Migration.__subclasses__())
+
+
+    @classmethod
+    def __sort_based_on_dependency(self, classes):
+        """sorts the given Migration classes based on their dependencies
+            to other Models.
+
+        returns a list of MigrationClasses in the order they can be migrated
+        or raises suitable exceptions if this couldn't be completed
+        """
+
+        def topological_sort(edges):
+            """
+            does a topological sort on the supplied edges http://goo.gl/lkOt1
+            """
+            G = nx.DiGraph()
+            for path in edges:
+                G.add_nodes_from(path)
+                G.add_path(path)
+            return nx.topological_sort(G)
+
+
+        # get a migratable order of models which are specified in the migrations
+        dependency_graphs = [ mig.depends_on + [ mig.model ]
+                                for mig in classes ]
+
+        ordered_models = topological_sort(dependency_graphs)
+        ordered_migrations = []
+
+        # sort the migrations and do some checks
+        for model in ordered_models:
+            matching_mig = [ cla for cla in classes if cla.model == model ]
+
+            if len(matching_mig) == 1:
+                ordered_migrations.append(matching_mig[0])
+            elif len(matching_mig) == 0:
+                raise AttributeError(
+                    "There is no migration available for '%s'" % model)
+            else:
+                raise AttributeError(
+                    "InvalidState: '%s' has more than one migration" % model)
+
+        return ordered_migrations
