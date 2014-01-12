@@ -66,10 +66,10 @@ class MigratorTest(TransactionTestCase):
         sorted_migrations.return_value = [ UserMigration ]
 
         UserMigration.migrate = classmethod(
-            lambda cls: User.objects.create(username="test"))
+            lambda cls: AppliedMigration.objects.create(classname="test"))
 
         Migrator.migrate(commit=False)
-        self.assertEqual(User.objects.count(), 0)
+        self.assertEqual(AppliedMigration.objects.count(), 0)
 
         Migrator.migrate(commit=True)
-        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(AppliedMigration.objects.count(), 1)
