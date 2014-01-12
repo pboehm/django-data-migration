@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from future.builtins import str
 
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from mock import patch
@@ -48,8 +48,9 @@ class ImporterTest(TestCase):
 
 
 from .test_apps.blog.models import Blog, Category
+from .test_apps.valid_a.data_migration_spec import UserMigration
 
-class MigratorTest(TestCase):
+class MigratorTest(TransactionTestCase):
 
     @install_apps(['valid_a', 'blog'])
     def test_topological_sorting(self):
@@ -59,3 +60,16 @@ class MigratorTest(TestCase):
         self.assertEqual(_sorted[0].model, User)
         self.assertEqual(_sorted[1].model, Blog)
         self.assertEqual(_sorted[2].model, Category)
+
+    @patch.object(Migrator, 'sorted_migrations')
+    def test_transaction_handling(self, sorted_migrations):
+        sorted_migrations.return_value = [ UserMigration ]
+
+        UserMigration.migrate = classmethod(
+            lambda cls: User.objects.create(username="test"))
+
+        Migrator.migrate(commit=False)
+        self.assertEqual(User.objects.count(), 0)
+
+        Migrator.migrate(commit=True)
+        self.assertEqual(User.objects.count(), 1)

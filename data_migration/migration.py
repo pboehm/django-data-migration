@@ -375,7 +375,7 @@ class Migrator(object):
                         print("%s: will be skipped" % migration)
                         continue
 
-                    if logquery:
+                    if log_queries:
                         print(("Query for %s: " % (migration)) + migration.query)
 
                     migration.migrate()

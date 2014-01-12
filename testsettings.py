@@ -6,6 +6,8 @@ DATABASES = {
 }
 
 INSTALLED_APPS = (
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
     'data_migration',
     'data_migration.test_apps.blog',
 )
