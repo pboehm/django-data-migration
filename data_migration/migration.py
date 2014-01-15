@@ -10,13 +10,30 @@ from .models import AppliedMigration
 
 import inspect
 import sys
+import inspect
 
-def is_a(klass, search_attr, fk=False, m2m=False, o2o=False,
+def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
                 exclude=False, delimiter=';', skip_missing=False):
+    """
+    Generates a uniform set of information out of the supplied data and does
+    some validations. This function is used to build the `column_description`
+    attribute in your migration. The information is used to translate your data
+    from the old DB schema into django instances.
+    """
 
-    if search_attr is None:
-        raise ImproperlyConfigured(
-            'is_a(%s) requires that you set a `search_attr`' % klass.__name__)
+    if exclude is not True:
+
+        if not (klass and search_attr):
+            raise ImproperlyConfigured(
+                'you have to specify at least `klass`, `search_attr` and '
+                'a type of relation')
+
+        if not (inspect.isclass(klass) and issubclass(klass, Model) ):
+            raise ImproperlyConfigured(
+                'you have to specify a subclass of Model as `klass`')
+
+        if len([ e for e in [fk, m2m, o2o] if e ]) != 1:
+            raise ImproperlyConfigured('a column has to be either `fk`, `m2m` or `o2o`')
 
     return { 'm2m': m2m, 'klass': klass, 'fk': fk, 'o2o': o2o,
              'attr': search_attr, 'exclude': exclude, 'delimiter': delimiter,
