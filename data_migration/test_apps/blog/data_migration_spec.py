@@ -84,6 +84,8 @@ class AuthorMigration(BaseMigration):
     FROM authors;
     """
     model = Author
+    allow_updates = True
+    search_attr = "id"
 
     @classmethod
     def hook_before_save(self, instance, row):

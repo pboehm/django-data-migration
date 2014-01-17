@@ -177,10 +177,32 @@ class MigrationTest(TransactionTestCase):
                           aft_save, aft_all, exist):
 
         subclasses.return_value = [ AuthorMigration ]
-        Migrator.migrate()
+        Migrator.migrate(commit=True)
 
         self.assertFalse(exist.called)
 
         methods = [ bef_all, bef_trans, aft_save, aft_all ]
         for method in methods:
             self.assertTrue(method.called)
+
+        self.assertEqual(AppliedMigration.objects.count(), 1)
+
+
+    @patch.object(AuthorMigration, 'hook_after_save')
+    @patch.object(AuthorMigration, 'hook_update_existing')
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_updatable_migrations(self, stdout, subclasses, exist, aft_save):
+        subclasses.return_value = [ AuthorMigration ]
+
+        Migrator.migrate(commit=True)
+        Author.objects.get(id=10).delete()
+        self.assertFalse(exist.called)
+        self.assertEqual(Author.objects.count(), 9)
+
+        Migrator.migrate(commit=True)
+        self.assertTrue(exist.called)
+        self.assertEqual(exist.call_count, 9)
+        self.assertEqual(aft_save.call_count, 11)
+        self.assertEqual(Author.objects.count(), 10)
+

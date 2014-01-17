@@ -196,7 +196,8 @@ class Migration(object):
         for row in cursor.fetchall():
 
             # search for an existing instance
-            desc = is_a(self.model, search_attr=self.search_attr, skip_missing=True)
+            desc = is_a(self.model, search_attr=self.search_attr, 
+                        fk=True, skip_missing=True)
             element = self.get_object(desc, row[self.search_attr])
 
             if element is not None:
