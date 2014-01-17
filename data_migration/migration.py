@@ -321,9 +321,9 @@ class Migration(object):
             raise ImproperlyConfigured(
                     '%s: `model` has to be a model CLASS' % self)
 
-        if not ( isinstance(self.query, str) and "SELECT" in self.query ):
+        if "SELECT" not in self.query:
             raise ImproperlyConfigured(
-                    '%s: `model` has to be a string containing SELECT' % self)
+                    '%s: `query` has to be a string containing SELECT' % self)
 
 
 from django.conf import settings

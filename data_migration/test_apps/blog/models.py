@@ -11,11 +11,11 @@ class Author(models.Model):
 class Comment(models.Model):
     message = models.TextField()
     author = models.ForeignKey(Author)
-    posted = models.DateField(db_index=True, auto_now_add=True)
+    posted = models.DateTimeField(db_index=True, auto_now_add=True)
 
 class Post(models.Model):
     title = models.CharField(max_length=100, unique=True)
     body = models.TextField()
-    posted = models.DateField(db_index=True, auto_now_add=True)
+    posted = models.DateTimeField(db_index=True, auto_now_add=True)
     author = models.ForeignKey(Author)
     comments = models.ManyToManyField(Comment, related_name="post")

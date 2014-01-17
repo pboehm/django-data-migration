@@ -7,6 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from mock import patch
+from io import StringIO
 
 from .models import AppliedMigration
 from .migration import is_a, Migration, Importer, Migrator
@@ -117,3 +118,33 @@ class IsATest(TestCase):
             'exclude': True,
             'fk': False,
         })
+
+import os
+import sqlite3
+
+class MigrationTest(TransactionTestCase):
+
+    def setUp(self):
+        self.db_path = os.path.join(
+                os.path.dirname(__file__), 'test_apps/blog/blog_fixture.db')
+
+        if not os.path.isfile(self.db_path):
+            fixture = os.path.join(os.path.dirname(self.db_path), "fixtures.sql")
+            conn = sqlite3.connect(self.db_path)
+            conn.cursor().executescript(open(fixture).read())
+            conn.close()
+
+    def tearDown(self):
+        if os.path.isfile(self.db_path):
+            os.unlink(self.db_path)
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch.object(Migration, '__subclasses__')
+    def test_description(self, subclasses, stdout):
+        subclasses.return_value = [
+            BaseMigration, AuthorMigration, PostMigration, CommentMigration
+        ]
+
+        Migrator.migrate()
+        self.assertTrue(True)
+
