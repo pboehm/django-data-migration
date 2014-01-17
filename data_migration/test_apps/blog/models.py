@@ -2,13 +2,20 @@
 
 from django.db import models
 
-class Category(models.Model):
-    title = models.CharField(max_length=100, db_index=True)
-    slug = models.SlugField(max_length=100, db_index=True)
+class Author(models.Model):
+    username = models.CharField(max_length=100, unique=True)
+    firstname = models.CharField(max_length=100)
+    lastname = models.CharField(max_length=100)
+    email = models.EmailField(max_length=75)
 
-class Blog(models.Model):
+class Comment(models.Model):
+    message = models.TextField()
+    author = models.ForeignKey(Author)
+    posted = models.DateField(db_index=True, auto_now_add=True)
+
+class Post(models.Model):
     title = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True)
     body = models.TextField()
     posted = models.DateField(db_index=True, auto_now_add=True)
-    category = models.ForeignKey(Category)
+    author = models.ForeignKey(Author)
+    comments = models.ManyToManyField(Comment, related_name="post")

@@ -35,38 +35,42 @@ class ImporterTest(TestCase):
 
     @install_apps(['valid_a', 'valid_b' 'missing_spec'])
     def test_import_existing_migrations_with_respect_to_excludes(self):
+        old_count = len(Migration.__subclasses__())
         Importer.import_all(excludes=["valid_b"])
-        classes = Migration.__subclasses__()
+        new_count = len(Migration.__subclasses__())
 
-        self.assertEqual(len(classes), 1)
-        self.assertTrue("valid_a" in str(classes[0]))
-        self.assertEqual(classes[0].model, User)
-
-    @install_apps(['valid_a'])
-    def test_that_decorator_works_as_expected(self):
-        Importer.import_all()
-        self.assertEqual(len(Migration.__subclasses__()), 1)
+        self.assertEqual(new_count - old_count, 1)
 
 
-from .test_apps.blog.models import Blog, Category
-from .test_apps.valid_a.data_migration_spec import UserMigration
+from .test_apps.blog.models import Author, Post, Comment
+from .test_apps.blog.data_migration_spec import *
 
 class MigratorTest(TransactionTestCase):
+
+    @install_apps(['valid_a', 'blog'])
+    def test_that_no_abstract_migration_will_be_sorted_in(self):
+        Importer.import_all()
+
+        _sorted = Migrator.sorted_migrations()
+        self.assertFalse(BaseMigration in _sorted)
+
 
     @install_apps(['valid_a', 'blog'])
     def test_topological_sorting(self):
         Importer.import_all()
 
-        _sorted = Migrator.sorted_migrations()
-        self.assertEqual(_sorted[0].model, User)
-        self.assertEqual(_sorted[1].model, Blog)
-        self.assertEqual(_sorted[2].model, Category)
+        _sorted = Migrator.sort_based_on_dependency(
+                    [AuthorMigration, PostMigration, CommentMigration])
+        self.assertEqual(_sorted[0].model, Author)
+        self.assertEqual(_sorted[1].model, Comment)
+        self.assertEqual(_sorted[2].model, Post)
+
 
     @patch.object(Migrator, 'sorted_migrations')
     def test_transaction_handling(self, sorted_migrations):
-        sorted_migrations.return_value = [ UserMigration ]
+        sorted_migrations.return_value = [ AuthorMigration ]
 
-        UserMigration.migrate = classmethod(
+        AuthorMigration.migrate = classmethod(
             lambda cls: AppliedMigration.objects.create(classname="test"))
 
         Migrator.migrate(commit=False)

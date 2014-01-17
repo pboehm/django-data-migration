@@ -44,7 +44,6 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
 class Migration(object):
     """Baseclass for each data migration"""
 
-    abstract = False
     skip = False
 
     # model class the migration creates instances for
@@ -406,11 +405,12 @@ class Migrator(object):
 
     @classmethod
     def sorted_migrations(self):
-        return self.__sort_based_on_dependency(Migration.__subclasses__())
+        return self.sort_based_on_dependency(
+            [ mig for mig in Migration.__subclasses__() if mig.query ])
 
 
     @classmethod
-    def __sort_based_on_dependency(self, classes):
+    def sort_based_on_dependency(self, classes):
         """sorts the given Migration classes based on their dependencies
             to other Models.
 
