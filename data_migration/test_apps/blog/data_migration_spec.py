@@ -45,6 +45,12 @@ class PostMigration(BaseMigration):
         'comments': is_a(Comment, search_attr="id", m2m=True, delimiter=",")
     }
 
+    @classmethod
+    def hook_after_save(self, instance, row):
+        # because of the auto_now_add flag, we have to set it hard to this value
+        instance.posted = row['posted']
+        instance.save()
+
 
 class CommentMigration(BaseMigration):
     query = """
@@ -60,6 +66,12 @@ class CommentMigration(BaseMigration):
     column_description = {
         'author': is_a(Author, search_attr="id", fk=True),
     }
+
+    @classmethod
+    def hook_after_save(self, instance, row):
+        # because of the auto_now_add flag, we have to set it hard to this value
+        instance.posted = row['posted']
+        instance.save()
 
 
 class AuthorMigration(BaseMigration):

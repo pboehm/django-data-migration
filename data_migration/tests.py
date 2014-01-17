@@ -119,12 +119,16 @@ class IsATest(TestCase):
             'fk': False,
         })
 
+from datetime import datetime
+
 import os
 import sqlite3
 
 class MigrationTest(TransactionTestCase):
 
     def setUp(self):
+        super(TransactionTestCase, self).setUp()
+
         self.db_path = os.path.join(
                 os.path.dirname(__file__), 'test_apps/blog/blog_fixture.db')
 
@@ -134,9 +138,13 @@ class MigrationTest(TransactionTestCase):
             conn.cursor().executescript(open(fixture).read())
             conn.close()
 
+
     def tearDown(self):
+        super(TransactionTestCase, self).tearDown()
+
         if os.path.isfile(self.db_path):
             os.unlink(self.db_path)
+
 
     @patch('sys.stdout', new_callable=StringIO)
     @patch.object(Migration, '__subclasses__')
@@ -145,6 +153,34 @@ class MigrationTest(TransactionTestCase):
             BaseMigration, AuthorMigration, PostMigration, CommentMigration
         ]
 
-        Migrator.migrate()
-        self.assertTrue(True)
+        Migrator.migrate(commit=True)
 
+        self.assertEqual(Author.objects.count(), 10)
+        self.assertEqual(Comment.objects.count(), 20)
+        self.assertEqual(Post.objects.count(), 10)
+
+        post9 = Post.objects.get(id=9)
+        self.assertEqual(post9.comments.count(), 3)
+        self.assertEqual(post9.title,
+                "lacinia at, iaculis quis, pede. Praesent eu dui. Cum sociis")
+        self.assertEqual(post9.posted, datetime(2014, 10, 13, 8, 36, 59))
+
+
+    @patch.object(AuthorMigration, 'hook_update_existing')
+    @patch.object(AuthorMigration, 'hook_after_all')
+    @patch.object(AuthorMigration, 'hook_after_save')
+    @patch.object(AuthorMigration, 'hook_before_transformation')
+    @patch.object(AuthorMigration, 'hook_before_all')
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_hook_calling(self, stdout, subclasses, bef_all, bef_trans,
+                          aft_save, aft_all, exist):
+
+        subclasses.return_value = [ AuthorMigration ]
+        Migrator.migrate()
+
+        self.assertFalse(exist.called)
+
+        methods = [ bef_all, bef_trans, aft_save, aft_all ]
+        for method in methods:
+            self.assertTrue(method.called)
