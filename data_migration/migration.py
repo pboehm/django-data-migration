@@ -254,15 +254,15 @@ class Migration(object):
                     if data is None:
                         continue
 
-                    usernames = data.split(desc['delimiter'])
-                    users = []
+                    parts = data.split(desc['delimiter'])
+                    objects = []
 
-                    for name in usernames:
-                        element = self.get_object(desc, name)
+                    for part in parts:
+                        element = self.get_object(desc, part)
                         if element is None:
                             continue
-                        users.append(element)
-                    m2ms[fieldname] = users
+                        objects.append(element)
+                    m2ms[fieldname] = objects
 
             else:
                 constructor_data[fieldname] = data
