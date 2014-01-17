@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.core.management.base import BaseCommand, CommandError, make_option
 from django.utils import translation
+from django.conf import settings
 
 from data_migration.migration import Importer, Migrator
 

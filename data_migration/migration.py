@@ -155,7 +155,7 @@ class Migration(object):
     @classmethod
     def open_db_connection(self):
         raise ImproperlyConfigured(
-            "You have to supply a suitable db connection for your DB")
+            "You have to supply a suitable db connection for your DB: %s" % self)
 
 
     @classmethod
