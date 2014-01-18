@@ -29,13 +29,16 @@ which is used to support both Python 2 and 3.
     pip install django-data-migration
     ```
 
-2. Add to INSTALLED_APPS:
+2. Add to `INSTALLED_APPS`:
 
     ```
     'data_migration',
     ```
 
-Alternatively, you can add `django-data-migration` to your requirements.txt.
+3. Run `./manage.py migrate` or `./manage.py syncdb` to create the included
+   models
+
+Alternatively, you can add `django-data-migration` to your `requirements.txt`.
 
 ## Documentation
 
