@@ -12,10 +12,13 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from os.path import dirname
+
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+p = os.path.abspath(dirname(dirname(dirname(__file__))))
+sys.path.append(p)
 os.environ['DJANGO_SETTINGS_MODULE'] = 'testsettings'
 
 # If extensions (or modules to document with autodoc) are in another directory,
