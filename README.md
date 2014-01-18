@@ -1,4 +1,4 @@
-django-data-migration 
+django-data-migration
 =====================
 [![PyPi version](https://pypip.in/v/django-data-migration/badge.png)](https://crate.io/packages/django-data-migration/)
 [![PyPi downloads](https://pypip.in/d/django-data-migrtion/badge.png)](https://crate.io/packages/django-data-migration/)
@@ -20,6 +20,22 @@ on Python 2.7 and 3.3.
 Python 3.2 is not supported, due to a [SyntaxError in the
 future library](https://github.com/PythonCharmers/python-future/issues/29)
 which is used to support both Python 2 and 3.
+
+## Installation
+
+1. Install using pip:
+
+    ```
+    pip install django-data-migration
+    ```
+
+2. Add to INSTALLED_APPS:
+
+    ```
+    'data_migration',
+    ```
+
+Alternatively, you can add `django-data-migration` to your requirements.txt.
 
 ## Documentation
 
