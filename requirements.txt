@@ -4,3 +4,4 @@ networkx>=1.8.0
 mock
 tox
 ipdb
+sphinx

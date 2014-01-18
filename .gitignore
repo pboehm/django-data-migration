@@ -9,3 +9,4 @@ dist/
 *.swo
 .tox
 blog_fixture.db
+docs/build/
