@@ -21,11 +21,18 @@ Python 3.2 is not supported, due to a [SyntaxError in the
 future library](https://github.com/PythonCharmers/python-future/issues/29)
 which is used to support both Python 2 and 3.
 
+## Documentation
+
+The documentation of `django-data-migration` is built by `sphinx` and can be
+edited in the `docs/` directory of this project.
+
+[Go to the Documentation on Read The Docs](http://django-data-migration.readthedocs.org/en/latest/)
+
 ## Status of project
 
-This app got extracted out of a production system and it requires some work in
-creating tests, documentation and refactoring until it can be used by
-everybody. Please be patient.
+This app has been extracted out of a production system and some work have been
+done, to write tests and refactor code. Writing extensive documentation is the
+next important step for this project.
 
 ## Start participating
 
