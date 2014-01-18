@@ -1,7 +1,7 @@
 django-data-migration 
 =====================
-[![PyPi version](https://pypip.in/v/django-data-migration/badge.png)](https://crate.io/packages/$REPO/)
-[![PyPi downloads](https://pypip.in/d/django-data-migrtion/badge.png)](https://crate.io/packages/$REPO/)
+[![PyPi version](https://pypip.in/v/django-data-migration/badge.png)](https://crate.io/packages/django-data-migration/)
+[![PyPi downloads](https://pypip.in/d/django-data-migrtion/badge.png)](https://crate.io/packages/django-data-migration/)
 [![Build Status](https://travis-ci.org/pboehm/django-data-migration.png?branch=master)](https://travis-ci.org/pboehm/django-data-migration)
 
 `django-data-migration` is a reusable Django app that migrates your legacy data
