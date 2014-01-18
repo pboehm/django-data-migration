@@ -121,7 +121,7 @@ class Migration(object):
     def hook_update_existing(self, instance, row):
         """Is called for each existing instance when `allow_updates` is True
 
-        :param instance: the existing instance which can be
+        :param instance: the existing instance which can be updated
         :param row: contains the raw result without any transformation
 
         :note: It is YOUR responsibility to make sure, that this method can be

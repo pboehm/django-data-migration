@@ -7,6 +7,6 @@ the `migrate_this_shit` management command::
     ./manage.py migrate_this_shit [--commit]
 
 If you omit the `--commit`-flag, the data is not saved to the DB. This is
-useful when you develop your migrations and have some failing migrations
-because the db is not cluttered with any data. When your migrations are
+useful when you develop your migrations and have some failing migrations, but
+the db is not cluttered with any incomplete data. When your migrations are
 succesful you can add `--commit` and you data is saved when no error occurs.
