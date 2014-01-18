@@ -77,49 +77,78 @@ class Migration(object):
     #########
     # Hooks #
     #########
-
-    # This function will be called for each row the query returns
-    # after the model has been instantiated or saved.
-    #
-    # Parameters:
-    #   1. the current model instance
-    #   2. The current row returned from the query
     @classmethod
     def hook_before_transformation(self, row):
+        """Is called right before row is passed to the model constructor.
+
+        Manipulate the row data if it is required. Here you can bring the data
+        in a suitable form which is not possible in SQL itself.
+
+        :param row: the dict which represents one row of the SQL query
+        """
         pass
+
 
     @classmethod
     def hook_before_save(self, instance, row):
+        """Is called right before the migrated instance is saved.
+
+        Do the changes, that make the instance valid, in this hook.
+
+        :param instance: the migrating instance which could be altered
+        :param row: the dict which represents one row of the SQL query
+        """
         pass
+
 
     @classmethod
     def hook_after_save(self, instance, row):
+        """Is called right after the migrated instance has been saved initially.
+
+        This is the place where you can set the data for a DateTimeField with
+        `auto_now_add`, where the date from the SQL query is not used
+        otherwise.
+
+        :param instance: the migrating instance which could be altered
+        :param row: the dict which represents one row of the SQL query
+        :note: when you make changes to the instance you have to call `save()`
+               manually
+        """
         pass
+
 
     @classmethod
     def hook_update_existing(self, instance, row):
-        """
-        Is called on the existing instance when `self.allow_updates` is True
+        """Is called for each existing instance when `allow_updates` is True
 
-        `row` contains the raw result without any transformation
+        :param instance: the existing instance which can be
+        :param row: contains the raw result without any transformation
 
-        Is is YOUR responsibility to make sure, that this method can be called
-        MULTIPLE times. DO SOME CHECKS
+        :note: It is YOUR responsibility to make sure, that this method can be
+               called MULTIPLE times. DO SOME CHECKS
         """
         pass
 
 
-    # hooks that will be called [before|after] all
-    # data [has been|will be] migrated
-    #
-    # BUT NOT FOR MIGRATIONS THAT WILL BE UPDATED
     @classmethod
     def hook_before_all(self):
+        """Is called before the migration will be migrated
+
+        Here you can execute some special setup code, which should be executed
+        only once.
+        """
         pass
+
 
     @classmethod
     def hook_after_all(self):
+        """Is called after the migration has been processed succesfully
+
+        Here you can set a debugger breakpoint for testing the migration
+        results.
+        """
         pass
+
 
     ###################
     # INTERNAL THINGS #
@@ -197,7 +226,7 @@ class Migration(object):
         for row in cursor.fetchall():
 
             # search for an existing instance
-            desc = is_a(self.model, search_attr=self.search_attr, 
+            desc = is_a(self.model, search_attr=self.search_attr,
                         fk=True, skip_missing=True)
             element = self.get_object(desc, row[self.search_attr])
 
