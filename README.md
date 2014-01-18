@@ -1,5 +1,8 @@
-django-data-migration [![Build Status](https://travis-ci.org/pboehm/django-data-migration.png?branch=master)](https://travis-ci.org/pboehm/django-data-migration)
+django-data-migration 
 =====================
+[![PyPi version](https://pypip.in/v/django-data-migration/badge.png)](https://crate.io/packages/$REPO/)
+[![PyPi downloads](https://pypip.in/d/django-data-migrtion/badge.png)](https://crate.io/packages/$REPO/)
+[![Build Status](https://travis-ci.org/pboehm/django-data-migration.png?branch=master)](https://travis-ci.org/pboehm/django-data-migration)
 
 `django-data-migration` is a reusable Django app that migrates your legacy data
 into your new django app. The only thing you have to supply is an appropriate
@@ -13,6 +16,10 @@ This extension is tested automatically against:
 * Django 1.6
 
 on Python 2.7 and 3.3.
+
+Python 3.2 is not supported, due to a [SyntaxError in the
+future library](https://github.com/PythonCharmers/python-future/issues/29)
+which is used to support both Python 2 and 3.
 
 ## Status of project
 
