@@ -11,6 +11,7 @@ from .models import AppliedMigration
 import inspect
 import sys
 import inspect
+import re
 
 def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
                 exclude=False, delimiter=';', skip_missing=False):
@@ -322,9 +323,10 @@ class Migration(object):
             raise ImproperlyConfigured(
                     '%s: `model` has to be a model CLASS' % self)
 
-        if "SELECT" not in self.query:
+        if not re.search('SELECT', self.query, re.IGNORECASE|re.MULTILINE):
             raise ImproperlyConfigured(
-                    '%s: `query` has to be a string containing SELECT' % self)
+                '%s: `query` has to be a string containing SELECT: %s' % (
+                    self, self.query))
 
 
 from django.conf import settings
