@@ -71,7 +71,7 @@ class Migration(object):
     #: this is a unique model field, which is used to search for existing
     #: model instances
     #:
-    #: Example: for Django`s User model it is `username`
+    #: Example: for Django`s User model it can be `username` or `id`
     #:
     #: :important: this attribute is required if `allow_updates` is set to True
     search_attr = None
