@@ -1,6 +1,8 @@
 Writing Migrations
 ==================
 
+.. _db_connection_setup:
+
 Setup Database Connection
 -------------------------
 
@@ -87,6 +89,36 @@ The following code implements an example database connection for PostgreSQL.
 
 Write Your first Migration
 --------------------------
+
+A complete Migration example
+............................
+
+The following listing shows a migration for a `Post` model. This is an excerpt
+from a `data_migration_spec.py` which can be found in a testing app, which is
+used by `django-data-migration` itself.
+
+`The complete app can be found here ...
+<https://github.com/pboehm/django-data-migration/tree/master/data_migration/test_apps/blog>`_
+
+.. literalinclude:: ../../data_migration/test_apps/blog/data_migration_spec.py
+    :pyobject: PostMigration
+
+As you can see, `PostMigration` inherits from a class called `BaseMigration`.
+This is one of the classes which is listed here :ref:`db_connection_setup`.
+
+What can be configured in every migration
+.........................................
+
+.. module:: data_migration.migration
+
+.. autoattribute:: Migration.skip
+.. autoattribute:: Migration.query
+.. autoattribute:: Migration.model
+.. autoattribute:: Migration.depends_on
+.. autoattribute:: Migration.column_description
+.. autoattribute:: Migration.allow_updates
+.. autoattribute:: Migration.search_attr
+
 
 Using Migration Hooks
 ---------------------

@@ -45,33 +45,35 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
 class Migration(object):
     """Baseclass for each data migration"""
 
+    #: if set to True, this migration will be skipped
     skip = False
 
-    # model class the migration creates instances for
+    #: model class the migration creates instances for
     model = None
 
-    # SQL SELECT query which returns the data suitable for the new model
-    # structure
+    #: SQL SELECT query which returns the data suitable for the new model
+    #: structure
     query = None
 
-    # this should be a dict which describes the data returned by the query. You
-    # can supply the Class that the data should be
+    #: This has to be a dict which describes the data returned by the query.
+    #:
+    #: You can supply the Class that the data should be
     column_description = {}
 
-    # a list of classes that the model requires to be migrated before
-    # The User class for example is included into many other models
+    #: a list of classes that the model requires to be migrated before
+    #: The User class for example is included into many other models
     depends_on = []
 
-    # If the following is set to False, the migration will be executed only once
-    # Otherwise it will create missing elements
+    #: If the following is set to False, the migration will be executed only once
+    #: Otherwise it will create missing elements
     allow_updates = False
 
-    # this is a unique model field, which is used to search for existing
-    # model instances
-    #
-    # Example: for Django`s User model it is `username`
-    #
-    # REQUIRED if `allow_updates` is set to True
+    #: this is a unique model field, which is used to search for existing
+    #: model instances
+    #:
+    #: Example: for Django`s User model it is `username`
+    #:
+    #: :important: this attribute is required if `allow_updates` is set to True
     search_attr = None
 
     #########
