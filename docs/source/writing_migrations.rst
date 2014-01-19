@@ -45,7 +45,7 @@ The following code implements an example database connection for SQLite:
 MySQL
 ......
 
-You have install the corresponding MySQL-Python-driver by executing::
+You have to install the corresponding MySQL-Python-driver by executing::
 
     pip install MySQL-python
 
