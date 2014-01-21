@@ -7,6 +7,7 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db.models import Model
 
 from .models import AppliedMigration
+from .utils import itersubclasses
 
 import inspect
 import sys
@@ -375,7 +376,7 @@ class Importer(object):
     @classmethod
     def possible_existing_migrations(self):
         return [ app + ".data_migration_spec"
-            for app in  self.installed_apps() ]
+            for app in self.installed_apps() ]
 
     @classmethod
     def import_all(self, excludes=[]):
@@ -440,7 +441,7 @@ class Migrator(object):
     @classmethod
     def sorted_migrations(self):
         return self.sort_based_on_dependency(
-            [ mig for mig in Migration.__subclasses__() if mig.query ])
+            [ mig for mig in itersubclasses(Migration) if mig.query ])
 
 
     @classmethod
