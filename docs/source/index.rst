@@ -7,6 +7,9 @@ SQL query that transforms your data fromthe old schema into your model
 structure. Dependencies between these migrations will be resolved
 automatically. Give it a try!
 
+.. warning:: This documentation is a work in progress. Please open an issue on
+    Github if any information are missing.
+
 Contents:
 ---------
 
