@@ -1,10 +1,57 @@
 Writing Migrations
 ==================
 
+What is a Migration?
+--------------------
+
+A migration is a Python class that should be placed in a file called
+`data_migration_spec.py` in one of your app-directories.
+`django-data-migrations` searches in each app, included in `INSTALLED_APPS`,
+for this file and imports all from it automatically.
+
+**Your migration normally specifies the following things:**
+
+* A database connection to your legacy data (whereever this is)
+* The model class, the migration should create instances for
+* A corresponding SQL-Query, which maps the old DB-schema to the new
+  Django-model-schema
+    * You can specify what should be done with special columns, returned by the
+      query (Many2Many-, ForeignKey-, One2One-Relations). With minimal
+      configuration, these things can be migrated automatically.
+* Dependencies to other models can be specified. This is used, to determine the
+  order each migration can be applied. e.g. If a migration specifies
+  a model as dependency, his migration will be executed before our migration
+  will be processed.
+* You can implement different hooks, where you normally manipulate the data
+  returned by the query or do some things which are not possible by SQL itself.
+* You can specify, if your migration should look for new instances on a second
+  run. This is not the default case.
+
+A complete Migration example
+----------------------------
+
+To give you an overview, how a common migration looks, the following listing
+shows a migration for a `Post` model. This is an excerpt from a
+`data_migration_spec.py` which can be found in a testing app, which is used by
+`django-data-migration` itself.
+
+`The complete app can be found here ...
+<https://github.com/pboehm/django-data-migration/tree/master/data_migration/test_apps/blog>`_
+
+.. literalinclude:: ../../data_migration/test_apps/blog/data_migration_spec.py
+    :pyobject: PostMigration
+
+As you can see, `PostMigration` inherits from a class called `BaseMigration`.
+This is one of the classes which is listed here :ref:`db_connection_setup`.
+
+
+Migration details
+-----------------
+
 .. _db_connection_setup:
 
 Setup Database Connection
--------------------------
+*************************
 
 `django-data-migration` should support as many databases as possible, so the
 connection part is not implemented directly for each database. You have to
@@ -30,7 +77,7 @@ The following code implements an example database connection for SQLite:
 
         @classmethod
         def open_db_connection(self):
-            conn = sqlite3.connect(':memory:'))
+            conn = sqlite3.connect(......)
 
             def dict_factory(cursor, row):
                 d = {}
@@ -59,17 +106,15 @@ The following code implements an example database connection for MySQL.
 
         @classmethod
         def open_db_connection(self):
-            return MySQLdb.connect(
-                host=HOST, user=USER, passwd=PASSWORD,
-                cursorclass=MySQLdb.cursors.DictCursor,
-                use_unicode=True
+            return MySQLdb.connect(......,
+                cursorclass=MySQLdb.cursors.DictCursor
             )
 
 
 PostgreSQL
 ..........
 
-You have install the corresponding PostgreSQL-Python-driver by executing::
+You have to install the corresponding PostgreSQL-Python-driver by executing::
 
     pip install psycopg2
 
@@ -83,31 +128,13 @@ The following code implements an example database connection for PostgreSQL.
 
         @classmethod
         def open_db_connection(self):
-            return psycopg2.connect(...,
-                        cursor_factory=psycopg2.extras.DictCursor)
+            return psycopg2.connect(......,
+                cursor_factory=psycopg2.extras.DictCursor
+            )
 
-
-Write Your first Migration
---------------------------
-
-A complete Migration example
-............................
-
-The following listing shows a migration for a `Post` model. This is an excerpt
-from a `data_migration_spec.py` which can be found in a testing app, which is
-used by `django-data-migration` itself.
-
-`The complete app can be found here ...
-<https://github.com/pboehm/django-data-migration/tree/master/data_migration/test_apps/blog>`_
-
-.. literalinclude:: ../../data_migration/test_apps/blog/data_migration_spec.py
-    :pyobject: PostMigration
-
-As you can see, `PostMigration` inherits from a class called `BaseMigration`.
-This is one of the classes which is listed here :ref:`db_connection_setup`.
 
 What can be configured in every migration
-.........................................
+*****************************************
 
 .. module:: data_migration.migration
 
@@ -121,7 +148,7 @@ What can be configured in every migration
 
 
 Using Migration Hooks
----------------------
+*********************
 
 :class:`data_migration.migration.Migration` defines a number of different
 hook-functions which will be called at different places allowing you to
