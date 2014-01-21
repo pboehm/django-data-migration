@@ -50,8 +50,8 @@ edited in the `docs/` directory of this project.
 ## Status of project
 
 This app has been extracted out of a production system and some work has been
-done, to write tests and refactor code. Writing extensive documentation is the
-next important step for this project.
+done, to write tests and refactor code. The project documentation is a work in
+progress.
 
 ## Start participating
 
