@@ -14,7 +14,7 @@ README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 setup(
     name='django-data-migration',
     version=__version__,
-    packages=['data_migration'],
+    packages=["data_migration", "data_migration.management.commands"],
     include_package_data=True,
     license='MIT License',
     description='Data migration framework for Django that migrates legacy data into your new django app',
