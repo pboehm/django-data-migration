@@ -21,6 +21,23 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
     some validations. This function is used to build the `column_description`
     attribute in your migration. The information is used to translate your data
     from the old DB schema into django instances.
+
+    :param klass: A model class which has a reference to the current column
+    :param search_attr: A model attribute which is used to filter for the right
+                        model instance
+    :param fk: The specified column in query includes a ForeinKey-Reference
+    :param m2m: The specified column in query includes (possible multiple)
+                elements which will be represented by a ManyToMany-Reference
+    :param delimiter: The character which separates multiple elements in a
+                      `m2m`-column
+    :param o2o: The specified column in query includes a OneToOne-Reference
+    :param exclude: The specified column should not be processed automatically,
+                    but can be accessed in any hook which includes the
+                    `row`-parameter
+    :param skip_missing: defines the behaviour if any element in a defined
+                         relation (`fk`, `m2m` or `o2o`) can not be found. If
+                         set to `True`, missing elements are ignored. Otherwise
+                         an exception is raised.
     """
 
     if exclude is not True:
@@ -46,35 +63,39 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
 class Migration(object):
     """Baseclass for each data migration"""
 
-    #: if set to True, this migration will be skipped
+    #: If `True`, this migration will be skipped and not processed.
     skip = False
 
-    #: model class the migration creates instances for
+    #: The Django model class there the query creates instances for. There
+    #: could be only one migration for each model.
     model = None
 
-    #: SQL SELECT query which returns the data suitable for the new model
-    #: structure
+    #: An SQL-SELECT-query which returns the data that is processed and passed
+    #: to the model-class-constructor. Please consult the documentation for an
+    #: in-depth description for this attribute.
     query = None
 
-    #: This has to be a dict which describes the data returned by the query.
-    #:
-    #: You can supply the Class that the data should be
+    #: This dict contains information about special columns returned by the
+    #: query (ForeinKey-, OneToOne- and Many2Many-Relations) or if it should be
+    #: excluded from automatic processing.
     column_description = {}
 
-    #: a list of classes that the model requires to be migrated before
-    #: The User class for example is included into many other models
+    #: A list of model classes the model requires to be migrated before itself.
+    #: This includes normally all model classes which are listed in
+    #: `column_description`.
     depends_on = []
 
-    #: If the following is set to False, the migration will be executed only once
-    #: Otherwise it will create missing elements
+    #: If the following is set to `False`, the migration will be executed only
+    #: once. Otherwise it will search for missing elements and creates them.
     allow_updates = False
 
-    #: this is a unique model field, which is used to search for existing
-    #: model instances
+    #: This is a unique model field, which is used to search for existing
+    #: model instances.
     #:
     #: Example: for Django`s User model it can be `username` or `id`
     #:
-    #: :important: this attribute is required if `allow_updates` is set to True
+    #: :important: this attribute is required if `allow_updates` is set to
+    #:             `True`
     search_attr = None
 
     #########

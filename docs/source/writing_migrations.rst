@@ -15,9 +15,11 @@ for this file and imports all from it automatically.
 * The model class, the migration should create instances for
 * A corresponding SQL-Query, which maps the old DB-schema to the new
   Django-model-schema
+
     * You can specify what should be done with special columns, returned by the
       query (Many2Many-, ForeignKey-, One2One-Relations). With minimal
       configuration, these things can be migrated automatically.
+
 * Dependencies to other models can be specified. This is used, to determine the
   order each migration can be applied. e.g. If a migration specifies
   a model as dependency, his migration will be executed before our migration
@@ -26,6 +28,8 @@ for this file and imports all from it automatically.
   returned by the query or do some things which are not possible by SQL itself.
 * You can specify, if your migration should look for new instances on a second
   run. This is not the default case.
+
+.. _complete_example:
 
 A complete Migration example
 ----------------------------
@@ -136,6 +140,10 @@ The following code implements an example database connection for PostgreSQL.
 What can be configured in every migration
 *****************************************
 
+In your migration classes you have several configuration options, which are
+listed below with a short description. For an in-depth explanation you can
+consult the paragraphs below.
+
 .. module:: data_migration.migration
 
 .. autoattribute:: Migration.skip
@@ -146,6 +154,29 @@ What can be configured in every migration
 .. autoattribute:: Migration.allow_updates
 .. autoattribute:: Migration.search_attr
 
+Writing effective Migration-queries
+***********************************
+
+.. important:: TODO
+
+Define dependencies
+*******************
+
+.. important:: TODO
+
+Describe special columns
+************************
+
+Your `query` can include special columns, that are represented as special
+Django-relations (ForeignKey-, Many2Many- or One2One-Relations). Or you can
+exclude specific columns from automatic processing. You will normally define
+these settings with an invocation of the `is_a`-function, which does some tests
+and returns the required settings. This will then be used by
+`django-data-migration` in different places.
+
+.. autofunction:: is_a
+
+Some examples for `is_a` can be found here: :ref:`complete_example`.
 
 Using Migration Hooks
 *********************
@@ -156,3 +187,8 @@ customize the migration work at different levels.
 
 .. autoclass:: data_migration.migration.Migration
    :members: hook_before_all, hook_before_transformation, hook_before_save, hook_after_save, hook_after_all, hook_update_existing
+
+Implement updateable Migrations
+*******************************
+
+.. important:: TODO
