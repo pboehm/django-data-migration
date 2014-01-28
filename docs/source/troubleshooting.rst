@@ -1,12 +1,13 @@
 Troubleshooting
 ===============
 
-GROUP_CONCAT row limit in Mysql is too low
-------------------------------------------
+GROUP_CONCAT column size limit in Mysql is too low
+--------------------------------------------------
 
-Mysql has fairly low limit for rows that can be merged by the `GROUP_CONCAT`
-function. For large result sets, this has to be increased. This can be done by
-the following SQL statement, which can be executed in `open_db_connection`.::
+Mysql has fairly low limit for rows that can be merged by the ``GROUP_CONCAT``
+function. For large result sets, this has to be increased. This can be done
+with the following SQL statement, which can be executed in
+``open_db_connection``.::
 
     @classmethod
     def open_db_connection(self):
