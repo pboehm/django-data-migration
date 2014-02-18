@@ -434,7 +434,7 @@ import networkx as nx
 class Migrator(object):
     """
     this class encapsulates the migration process for all existing migration
-    classes. This is normally used by the migrate_this_shit management command
+    classes. This is normally used by the migrate_legacy_data management command
     """
 
     @classmethod
