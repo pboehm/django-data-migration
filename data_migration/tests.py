@@ -6,6 +6,7 @@ from django.test import TestCase, TransactionTestCase
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.contrib.auth.models import User, Group
+
 from mock import patch
 from io import StringIO
 
@@ -68,7 +69,8 @@ class MigratorTest(TransactionTestCase):
 
 
     @patch.object(Migrator, 'sorted_migrations')
-    def test_transaction_handling(self, sorted_migrations):
+    @patch('sys.stderr', new_callable=StringIO)
+    def test_transaction_handling(self, stderr, sorted_migrations):
         sorted_migrations.return_value = [ AuthorMigration ]
 
         AuthorMigration.migrate = classmethod(
@@ -120,6 +122,7 @@ class IsATest(TestCase):
         })
 
 from datetime import datetime
+from django.core import management
 
 import os
 import sqlite3
@@ -206,3 +209,30 @@ class MigrationTest(TransactionTestCase):
         self.assertEqual(aft_save.call_count, 11)
         self.assertEqual(Author.objects.count(), 10)
 
+
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_calling_management_command(self, stdout, stderr, sub):
+        sub.return_value = [ AuthorMigration ]
+
+        management.call_command('migrate_legacy_data', commit_changes=True)
+
+        val = stderr.getvalue()
+        self.assertFalse("is deprecated in favour of" in val)
+        self.assertFalse("Not commiting! No changes" in val)
+        self.assertTrue("Migrating element" in stdout.getvalue())
+
+
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_calling_deprecated_management_command(self, stdout, stderr, sub):
+        sub.return_value = [ AuthorMigration ]
+
+        management.call_command('migrate_this_shit', commit_changes=True)
+
+        val = stderr.getvalue()
+        self.assertTrue("is deprecated in favour of" in val)
+        self.assertFalse("Not commiting! No changes" in val)
+        self.assertTrue("Migrating element" in stdout.getvalue())

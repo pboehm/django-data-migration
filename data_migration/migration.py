@@ -456,7 +456,9 @@ class Migrator(object):
                     raise NotCommitBreak("nothing has changed")
 
         except NotCommitBreak as e:
-            pass
+            sys.stderr.write(
+                "\nNot commiting! No changes have been made to the DB.\n"
+                "Pass --commit to write your changes on success.\n")
 
 
     @classmethod

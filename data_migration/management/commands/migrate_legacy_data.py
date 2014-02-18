@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from __future__ import print_function
 from django.core.management.base import BaseCommand, CommandError, make_option
-from django.core import management
+from django.utils import translation
+from django.conf import settings
+
+from data_migration.migration import Importer, Migrator
 
 import sys
 
 class Command(BaseCommand):
-    help = 'DEPRECATED: Migrates old data into the new django schema'
+    help = 'Migrates old data into the new django schema'
+    can_import_settings = True
 
     option_list = BaseCommand.option_list + (
         make_option('--commit',
@@ -28,7 +33,17 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
+        translation.activate(settings.LANGUAGE_CODE)
 
-        sys.stderr.write(
-            u"This command is deprecated in favour of 'migrate_legacy_data'\n\n")
-        management.call_command('migrate_legacy_data', *args, **options)
+        excluded_apps = options.get('excluded_apps', [])
+
+        sys.stdout.write("Importing migrations ...\n")
+        Importer.import_all(excludes=excluded_apps)
+
+        sys.stdout.write("Running migrations ...\n")
+        Migrator.migrate(
+            commit=options.get('commit_changes', False),
+            log_queries=options.get('logquery', False)
+        )
+
+        sys.stdout.write("Done\n")
