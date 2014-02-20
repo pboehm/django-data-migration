@@ -10,7 +10,7 @@ class Author(models.Model):
 
 class Comment(models.Model):
     message = models.TextField()
-    author = models.ForeignKey(Author)
+    author = models.ForeignKey(Author, null=True)
     posted = models.DateTimeField(db_index=True, auto_now_add=True)
 
 class Post(models.Model):

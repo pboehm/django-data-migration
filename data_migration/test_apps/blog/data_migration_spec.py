@@ -64,7 +64,7 @@ class CommentMigration(BaseMigration):
     model = Comment
     depends_on = [ Author ]
     column_description = {
-        'author': is_a(Author, search_attr="id", fk=True),
+        'author': is_a(Author, search_attr="id", fk=True, skip_missing=True),
     }
 
     @classmethod

@@ -329,7 +329,7 @@ class Migration(object):
         criteria = { desc['attr']: value }
         try:
             return desc['klass'].objects.get(**criteria)
-        except self.model.DoesNotExist as e:
+        except ObjectDoesNotExist as e:
             if desc['skip_missing']:
                 return None
             else:

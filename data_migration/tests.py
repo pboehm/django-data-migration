@@ -236,3 +236,14 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue("is deprecated in favour of" in val)
         self.assertFalse("Not commiting! No changes" in val)
         self.assertTrue("Migrating element" in stdout.getvalue())
+
+
+    @patch.object(AuthorMigration, 'hook_after_all')
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_skip_missing(self, stdout, subclasses, aft_all):
+        subclasses.return_value = [ AuthorMigration, CommentMigration ]
+        aft_all.side_effect = lambda: Author.objects.get(id=3).delete()
+
+        # there shouldn't be an exception here (when skip_missing works)
+        Migrator.migrate(commit=True)
