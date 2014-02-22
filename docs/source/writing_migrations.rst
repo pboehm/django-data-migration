@@ -136,6 +136,65 @@ The following code implements an example database connection for PostgreSQL.
                 cursor_factory=psycopg2.extras.DictCursor
             )
 
+MS-SQL
+......
+
+`@aidanlister <https://github.com/aidanlister>`_ contributed a sample DB
+connection for MS-SQL using ``pyodbc``, which has to be installed first::
+
+    pip install pyodbc
+
+The following code implements an example database connection for MS-SQL.
+
+.. code-block:: python
+
+    import pyodbc
+
+    class ConnectionWrapper(object):
+        def __init__(self, cnxn):
+            self.cnxn = cnxn
+
+        def __getattr__(self, attr):
+            return getattr(self.cnxn, attr)
+
+        def cursor(self):
+            return CursorWrapper(self.cnxn.cursor())
+
+
+    class CursorWrapper(object):
+        def __init__(self, cursor):
+            self.cursor = cursor
+
+        def __getattr__(self, attr):
+            return getattr(self.cursor, attr)
+
+        def fetchone(self):
+            row = self.cursor.fetchone()
+            if not row:
+                return None
+            return dict((t[0], value) for t, value in zip(self.cursor.description, row))
+
+        def fetchall(self):
+            rows = self.cursor.fetchall()
+            if not rows:
+                return None
+
+            dictrows = []
+            for row in rows:
+                row = dict((t[0], value) for t, value in zip(self.cursor.description, row))
+                dictrows.append(row)
+            return dictrows
+
+
+    class BaseMigration(Migration):
+        @classmethod
+        def open_db_connection(self):
+            dsn = "DRIVER={SQL Server Native Client 11.0};SERVER=X;DATABASE=X;UID=X;PWD=X"
+
+            cnxn = pyodbc.connect(dsn)
+            wrapped_connection = ConnectionWrapper(cnxn)
+            return wrapped_connection
+
 
 What can be configured in every migration
 *****************************************
