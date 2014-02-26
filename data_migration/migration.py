@@ -174,6 +174,19 @@ class Migration(object):
         pass
 
 
+    @classmethod
+    def hook_error_creating_instance(self, exception, row):
+        """is called in case of an error on creating instances from the query
+
+        It produces some debug output and reraises the exception
+        """
+        sys.stderr.write(
+            "Error: The following row produces an error on instance creation:\n")
+        sys.stderr.write("%s\n" % row)
+
+        raise exception
+
+
     ###################
     # INTERNAL THINGS #
     ###################
@@ -225,17 +238,7 @@ class Migration(object):
             sys.stdout.write("\rMigrating element %d/%d" % (current, total))
             sys.stdout.flush()
 
-            self.hook_before_transformation(row)
-            constructor_data, m2ms = self.transform_row_dataset(row)
-            instance = self.model(**constructor_data)
-
-            self.hook_before_save(instance, row)
-
-            instance.save()
-
-            self.create_m2ms(instance, m2ms)
-
-            self.hook_after_save(instance, row)
+            self.create_instance_from_row(row)
 
         self.hook_after_all()
         print("")
@@ -268,19 +271,34 @@ class Migration(object):
                 self.hook_update_existing(element, row)
                 continue
 
+            self.create_instance_from_row(row)
+
+        print("")
+
+
+    @classmethod
+    def create_instance_from_row(self, row):
+        """
+        utility method that creates the suitable instance from row and calls
+        the required hook methods.
+        """
+        def create(row):
             self.hook_before_transformation(row)
+
             constructor_data, m2ms = self.transform_row_dataset(row)
             instance = self.model(**constructor_data)
 
             self.hook_before_save(instance, row)
 
             instance.save()
-
             self.create_m2ms(instance, m2ms)
 
             self.hook_after_save(instance, row)
 
-        print("")
+        try:
+            create(row)
+        except Exception as e:
+            self.hook_error_creating_instance(e, row)
 
 
     @classmethod

@@ -13,9 +13,14 @@ from io import StringIO
 from .models import AppliedMigration
 from .migration import is_a, Migration, Importer, Migrator
 
+import sys
+
 """
 Utility stuff
 """
+def raise_(ex):
+    raise ex
+
 def install_apps(apps):
 
     apps = [ "data_migration.test_apps.%s" % app for app in apps ]
@@ -208,6 +213,42 @@ class MigrationTest(TransactionTestCase):
         self.assertEqual(exist.call_count, 9)
         self.assertEqual(aft_save.call_count, 11)
         self.assertEqual(Author.objects.count(), 10)
+
+
+    @patch.object(CommentMigration, 'hook_before_save')
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_error_handling_default_behaviour(self, out, err, sub, hook):
+
+        sub.return_value = [ AuthorMigration, CommentMigration ]
+        hook.side_effect = lambda instance, row: raise_(ValueError())
+
+        with self.assertRaises(ValueError):
+            Migrator.migrate(commit=True)
+
+        output = err.getvalue()
+        self.assertTrue("Error: The following row produces an" in output)
+
+
+    @patch.object(CommentMigration, 'hook_error_creating_instance')
+    @patch.object(CommentMigration, 'hook_before_save')
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    def test_error_handling_hook_is_called(self, err, out, sub, hook, error):
+
+        sub.return_value = [ AuthorMigration, CommentMigration ]
+        hook.side_effect = lambda instance, row: raise_(ValueError())
+        error.side_effect = None
+
+        Migrator.migrate(commit=True)
+
+        # test that the right parameters re passed to the hook
+        error.assert_called()
+        exception, row = error.call_args[0]
+        self.assertTrue(isinstance(exception, ValueError))
+        self.assertTrue(isinstance(row, dict))
 
 
     @patch.object(Migration, '__subclasses__')
