@@ -245,7 +245,21 @@ hook-functions which will be called at different places allowing you to
 customize the migration work at different levels.
 
 .. autoclass:: data_migration.migration.Migration
-   :members: hook_before_all, hook_before_transformation, hook_before_save, hook_after_save, hook_after_all, hook_update_existing
+   :members: hook_before_all, hook_before_transformation, hook_before_save, hook_after_save, hook_after_all, hook_update_existing, hook_error_creating_instance
+
+Error-Handling
+..............
+
+In case of an exception when creating the instances, a default error handler
+will be called, to print the current row to stderr and than reraise the
+exception.
+
+.. autoclass:: data_migration.migration.Migration
+   :members: hook_error_creating_instance
+
+You can override this hook in your migration if it requires special handling of
+errors. When this method returns without an exception, the next row from the
+query will be processed.
 
 Hook-Flowchart
 ..............

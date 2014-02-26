@@ -176,7 +176,7 @@ class Migration(object):
 
     @classmethod
     def hook_error_creating_instance(self, exception, row):
-        """is called in case of an error on creating instances from the query
+        """Is called in case of an error on creating instances from the query
 
         It produces some debug output and reraises the exception
         """
