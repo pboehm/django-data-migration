@@ -175,6 +175,21 @@ class Migration(object):
 
 
     @classmethod
+    def hook_row_count(self, connection, cursor):
+        """Is called for getting the number of elements returned by ``query``
+
+        This is useful because several database engines (including sqlite3)
+        doesn't provide a real rowcount value. They return -1 instead. With
+        this hook, you can implement your own method for getting the row count,
+        for example by issueing a special count-SQL-query (use the
+        ``connection`` parameter).
+
+        It should return a numeric value which is displayed when migrating.
+        """
+        return cursor.rowcount
+
+
+    @classmethod
     def hook_error_creating_instance(self, exception, row):
         """Is called in case of an error on creating instances from the query
 
@@ -210,11 +225,11 @@ class Migration(object):
 
         if check is None:
             # update existing migrations
-            self.process_cursor_for_update(cursor, fields)
+            self.process_cursor_for_update(connection, cursor, fields)
 
         else:
             # do the normal migration method
-            self.process_cursor(cursor, fields)
+            self.process_cursor(connection, cursor, fields)
 
             AppliedMigration.objects.create(classname=str(self))
 
@@ -226,8 +241,8 @@ class Migration(object):
 
 
     @classmethod
-    def process_cursor(self, cursor, fields):
-        total = cursor.rowcount
+    def process_cursor(self, connection, cursor, fields):
+        total = self.hook_row_count(connection, cursor)
         current = 0
 
         self.hook_before_all()
@@ -245,8 +260,8 @@ class Migration(object):
 
 
     @classmethod
-    def process_cursor_for_update(self, cursor, fields):
-        total = cursor.rowcount
+    def process_cursor_for_update(self, connection, cursor, fields):
+        total = self.hook_row_count(connection, cursor)
         created = 0
         existing = 0
 

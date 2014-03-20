@@ -215,6 +215,23 @@ class MigrationTest(TransactionTestCase):
         self.assertEqual(Author.objects.count(), 10)
 
 
+    @patch.object(AuthorMigration, 'hook_row_count')
+    @patch.object(Migration, '__subclasses__')
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    def test_row_count_hook(self, err, out, sub, hook):
+
+        sub.return_value = [ AuthorMigration ]
+        hook.side_effect = lambda conn, cursor: 55555
+
+        Migrator.migrate(commit=True)
+        self.assertTrue(hook.called)
+
+        connection, cursor = hook.call_args[0]
+        self.assertEqual(cursor.rowcount, -1)
+        self.assertTrue("1/55555" in out.getvalue())
+
+
     @patch.object(CommentMigration, 'hook_before_save')
     @patch.object(Migration, '__subclasses__')
     @patch('sys.stderr', new_callable=StringIO)
