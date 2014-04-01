@@ -118,6 +118,10 @@ class Migration(object):
         """Is called right before the migrated instance is saved.
 
         Do the changes, that make the instance valid, in this hook.
+        
+        If the instance should not be committed, e.g. due to a runtime check
+        failing, you may return False which will prevent the model's save
+        method and after_save hooks from being called.
 
         :param instance: the migrating instance which could be altered
         :param row: the dict which represents one row of the SQL query
@@ -303,7 +307,10 @@ class Migration(object):
             constructor_data, m2ms = self.transform_row_dataset(row)
             instance = self.model(**constructor_data)
 
-            self.hook_before_save(instance, row)
+            before_save_success = self.hook_before_save(instance, row)
+            if before_save_success == False:
+                sys.stdout.write("Skipping: before_save returned False")
+                return
 
             instance.save()
             self.create_m2ms(instance, m2ms)
