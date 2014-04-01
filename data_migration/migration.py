@@ -303,7 +303,10 @@ class Migration(object):
             constructor_data, m2ms = self.transform_row_dataset(row)
             instance = self.model(**constructor_data)
 
-            self.hook_before_save(instance, row)
+            before_save_success = self.hook_before_save(instance, row)
+            if before_save_success == False:
+                sys.stdout.write("Skipping: before_save returned False")
+                return
 
             instance.save()
             self.create_m2ms(instance, m2ms)
