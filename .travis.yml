@@ -8,4 +8,6 @@ env:
 install:
   - pip install -q Django==$DJANGO_VERSION --use-mirrors
   - pip install -r requirements.txt --use-mirrors
-script: python manage.py test
+  - pip install coveralls
+script: coverage run --source='.' manage.py test
+after_success: coveralls
