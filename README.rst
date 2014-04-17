@@ -1,7 +1,7 @@
 django-data-migration
 =====================
 
-|PyPi version| |PyPi downloads| |Build Status| |License|
+|Build Status| |Coverage| |PyPi version| |PyPi downloads| |License|
 
 ``django-data-migration`` is a reusable Django app that migrates your
 legacy data into your new django app. The only thing you have to supply
@@ -73,3 +73,5 @@ Start participating
    :target: https://travis-ci.org/pboehm/django-data-migration
 .. |License| image:: https://pypip.in/license/django-data-migration/badge.png
    :target: https://pypi.python.org/pypi/django-data-migration/
+.. |Coverage| image:: https://coveralls.io/repos/pboehm/django-data-migration/badge.png?branch=master
+   :target: https://coveralls.io/r/pboehm/django-data-migration?branch=master
