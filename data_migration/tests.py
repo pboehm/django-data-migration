@@ -35,6 +35,15 @@ def install_apps(apps):
     return real_decorator
 
 
+def run_migrations(*migrations):
+    def real_decorator(function):
+        def wrapper(*args, **kwargs):
+            with patch.object(Migration, '__subclasses__') as method:
+                method.return_value = migrations
+                function(*args, **kwargs)
+        return wrapper
+    return real_decorator
+
 """
 Test Cases
 """
@@ -155,12 +164,8 @@ class MigrationTest(TransactionTestCase):
 
 
     @patch('sys.stdout', new_callable=StringIO)
-    @patch.object(Migration, '__subclasses__')
-    def test_description(self, subclasses, stdout):
-        subclasses.return_value = [
-            BaseMigration, AuthorMigration, PostMigration, CommentMigration
-        ]
-
+    @run_migrations(AuthorMigration, PostMigration, CommentMigration)
+    def test_description(self, stdout):
         Migrator.migrate(commit=True)
 
         self.assertEqual(Author.objects.count(), 10)
@@ -179,12 +184,10 @@ class MigrationTest(TransactionTestCase):
     @patch.object(AuthorMigration, 'hook_after_save')
     @patch.object(AuthorMigration, 'hook_before_transformation')
     @patch.object(AuthorMigration, 'hook_before_all')
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stdout', new_callable=StringIO)
-    def test_hook_calling(self, stdout, subclasses, bef_all, bef_trans,
+    @run_migrations(AuthorMigration)
+    def test_hook_calling(self, stdout, bef_all, bef_trans,
                           aft_save, aft_all, exist):
-
-        subclasses.return_value = [ AuthorMigration ]
         Migrator.migrate(commit=True)
 
         self.assertFalse(exist.called)
@@ -198,11 +201,9 @@ class MigrationTest(TransactionTestCase):
 
     @patch.object(AuthorMigration, 'hook_after_save')
     @patch.object(AuthorMigration, 'hook_update_existing')
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stdout', new_callable=StringIO)
-    def test_updatable_migrations(self, stdout, subclasses, exist, aft_save):
-        subclasses.return_value = [ AuthorMigration ]
-
+    @run_migrations(AuthorMigration)
+    def test_updatable_migrations(self, stdout, exist, aft_save):
         Migrator.migrate(commit=True)
         Author.objects.get(id=10).delete()
         self.assertFalse(exist.called)
@@ -216,12 +217,10 @@ class MigrationTest(TransactionTestCase):
 
 
     @patch.object(AuthorMigration, 'hook_row_count')
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stdout', new_callable=StringIO)
     @patch('sys.stderr', new_callable=StringIO)
-    def test_row_count_hook(self, err, out, sub, hook):
-
-        sub.return_value = [ AuthorMigration ]
+    @run_migrations(AuthorMigration)
+    def test_row_count_hook(self, err, out, hook):
         hook.side_effect = lambda conn, cursor: 55555
 
         Migrator.migrate(commit=True)
@@ -233,12 +232,10 @@ class MigrationTest(TransactionTestCase):
 
 
     @patch.object(CommentMigration, 'hook_before_save')
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
-    def test_error_handling_default_behaviour(self, out, err, sub, hook):
-
-        sub.return_value = [ AuthorMigration, CommentMigration ]
+    @run_migrations(AuthorMigration, CommentMigration)
+    def test_error_handling_default_behaviour(self, out, err, hook):
         hook.side_effect = lambda instance, row: raise_(ValueError())
 
         with self.assertRaises(ValueError):
@@ -250,12 +247,10 @@ class MigrationTest(TransactionTestCase):
 
     @patch.object(CommentMigration, 'hook_error_creating_instance')
     @patch.object(CommentMigration, 'hook_before_save')
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stdout', new_callable=StringIO)
     @patch('sys.stderr', new_callable=StringIO)
-    def test_error_handling_hook_is_called(self, err, out, sub, hook, error):
-
-        sub.return_value = [ AuthorMigration, CommentMigration ]
+    @run_migrations(AuthorMigration, CommentMigration)
+    def test_error_handling_hook_is_called(self, err, out, hook, error):
         hook.side_effect = lambda instance, row: raise_(ValueError())
         error.side_effect = None
 
@@ -268,12 +263,10 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue(isinstance(row, dict))
 
 
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
-    def test_calling_management_command(self, stdout, stderr, sub):
-        sub.return_value = [ AuthorMigration ]
-
+    @run_migrations(AuthorMigration)
+    def test_calling_management_command(self, stdout, stderr):
         management.call_command('migrate_legacy_data', commit_changes=True)
 
         val = stderr.getvalue()
@@ -282,12 +275,10 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue("Migrating element" in stdout.getvalue())
 
 
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
-    def test_calling_deprecated_management_command(self, stdout, stderr, sub):
-        sub.return_value = [ AuthorMigration ]
-
+    @run_migrations(AuthorMigration)
+    def test_calling_deprecated_management_command(self, stdout, stderr):
         management.call_command('migrate_this_shit', commit_changes=True)
 
         val = stderr.getvalue()
@@ -297,10 +288,9 @@ class MigrationTest(TransactionTestCase):
 
 
     @patch.object(AuthorMigration, 'hook_after_all')
-    @patch.object(Migration, '__subclasses__')
     @patch('sys.stdout', new_callable=StringIO)
-    def test_skip_missing(self, stdout, subclasses, aft_all):
-        subclasses.return_value = [ AuthorMigration, CommentMigration ]
+    @run_migrations(AuthorMigration, CommentMigration)
+    def test_skip_missing(self, stdout, aft_all):
         aft_all.side_effect = lambda: Author.objects.get(id=3).delete()
 
         # there shouldn't be an exception here (when skip_missing works)
