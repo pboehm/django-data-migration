@@ -15,7 +15,8 @@ import inspect
 import re
 
 def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
-                exclude=False, delimiter=';', skip_missing=False):
+                exclude=False, delimiter=';', skip_missing=False,
+                prefetch=False, assign_by_id=False):
     """
     Generates a uniform set of information out of the supplied data and does
     some validations. This function is used to build the `column_description`
@@ -38,6 +39,14 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
                          relation (`fk`, `m2m` or `o2o`) can not be found. If
                          set to `True`, missing elements are ignored. Otherwise
                          an exception is raised.
+    :param prefetch: If set to True, this will prefetch all existing instances
+                     from the related model into a lookup cache, so that less
+                     database queries will be made.
+    :param assign_by_id: This will assign the related objects as Primary Key
+                         values (int) instead of whole objects. This
+                         decreases the memory usage but has a drawback, because
+                         the related object is not available until save() has
+                         been called on the model.
     """
 
     if exclude is not True:
@@ -56,7 +65,8 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
 
     return { 'm2m': m2m, 'klass': klass, 'fk': fk, 'o2o': o2o,
              'attr': search_attr, 'exclude': exclude, 'delimiter': delimiter,
-             'skip_missing': skip_missing,
+             'skip_missing': skip_missing, 'prefetch': prefetch,
+             'assign_by_id': assign_by_id
             }
 
 
@@ -118,7 +128,7 @@ class Migration(object):
         """Is called right before the migrated instance is saved.
 
         Do the changes, that make the instance valid, in this hook.
-        
+
         If the instance should not be committed, e.g. due to a runtime check
         failing, you may return False which will prevent the model's save
         method and after_save hooks from being called.

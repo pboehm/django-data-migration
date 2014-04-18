@@ -229,8 +229,8 @@ Describe special columns
 Your ``query`` can include special columns, that are represented as special
 Django-relations (ForeignKey-, Many2Many- or One2One-Relations). Or you can
 exclude specific columns from automatic processing. You will normally define
-these settings with an invocation of the ``is_a``-function, which does some tests
-and returns the required settings. This will then be used by
+these settings with an invocation of the ``is_a``-function, which does some
+tests and returns the required settings. This will then be used by
 ``django-data-migration`` in different places.
 
 .. autofunction:: is_a

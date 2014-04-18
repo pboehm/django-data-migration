@@ -109,6 +109,8 @@ class IsATest(TestCase):
             'o2o': False,
             'exclude': False,
             'fk': True,
+            'prefetch': False,
+            'assign_by_id': False
         })
 
     def test_that_class_and_attr_has_to_be_present(self):
@@ -133,7 +135,15 @@ class IsATest(TestCase):
             'o2o': False,
             'exclude': True,
             'fk': False,
+            'prefetch': False,
+            'assign_by_id': False
         })
+
+    def test_performance_options(self):
+        attr = is_a(User, 'username', fk=True, prefetch=True, assign_by_id=True)
+        self.assertEqual(attr['prefetch'], True)
+        self.assertEqual(attr['assign_by_id'], True)
+
 
 from datetime import datetime
 from django.core import management
