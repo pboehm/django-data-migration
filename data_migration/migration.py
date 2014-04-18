@@ -108,6 +108,10 @@ class Migration(object):
     #:             `True`
     search_attr = None
 
+    # lookup cache which decreases the number of issued SQL queries
+    # dramatically by prefetching all related objects
+    relation_cache = {}
+
     #########
     # Hooks #
     #########
@@ -376,15 +380,45 @@ class Migration(object):
 
     @classmethod
     def get_object(self, desc, value):
-        criteria = { desc['attr']: value }
+        klass = desc['klass']
+        attr  = desc['attr']
+
         try:
-            return desc['klass'].objects.get(**criteria)
+            if desc['prefetch']:
+                # build up relation cache
+                if klass not in self.relation_cache:
+                    # we have to use the right type as the relation_cache key
+                    # because the attr could be in the wrong when it comes from
+                    # the sql query
+                    type_of_attr = type(value)
+
+                    self.relation_cache[klass] = dict(
+                        ( type_of_attr(inst.__getattribute__(attr)), inst )
+                            for inst in klass.objects.all()
+                    )
+
+                # get the instance out of relation cache
+                inst = self.relation_cache[klass].get(value, None)
+                if inst:
+                    return inst
+
+                raise ObjectDoesNotExist(
+                    "%s matching query (%s=%s) does not exist in relation cache." % (
+                        klass.__name__, attr, value))
+
+            else:
+                # get the related object out of the DB
+                return klass.objects.get(**{ attr: value })
+
         except ObjectDoesNotExist as e:
             if desc['skip_missing']:
                 return None
             else:
                 raise
 
+    @classmethod
+    def cleanup_relation_cache(self):
+        self.relation_cache = {}
 
     @classmethod
     def create_m2ms(self, instance, m2ms):
@@ -501,6 +535,7 @@ class Migrator(object):
                         print(("Query for %s: " % (migration)) + migration.query)
 
                     migration.migrate()
+                    migration.cleanup_relation_cache()
 
                 if not commit:
                     raise NotCommitBreak("nothing has changed")

@@ -175,7 +175,7 @@ class MigrationTest(TransactionTestCase):
 
     @patch('sys.stdout', new_callable=StringIO)
     @run_migrations(AuthorMigration, PostMigration, CommentMigration)
-    def test_description(self, stdout):
+    def test_normal_migration(self, stdout):
         Migrator.migrate(commit=True)
 
         self.assertEqual(Author.objects.count(), 10)
@@ -215,6 +215,7 @@ class MigrationTest(TransactionTestCase):
     @run_migrations(AuthorMigration)
     def test_updatable_migrations(self, stdout, exist, aft_save):
         Migrator.migrate(commit=True)
+
         Author.objects.get(id=10).delete()
         self.assertFalse(exist.called)
         self.assertEqual(Author.objects.count(), 9)
@@ -272,6 +273,36 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue(isinstance(exception, ValueError))
         self.assertTrue(isinstance(row, dict))
 
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch.object(CommentMigration, 'cleanup_relation_cache')
+    @patch.object(Author.objects, 'get')
+    @run_migrations(AuthorMigration, CommentMigration)
+    def test_prefetching_fk(self, get, clean, err, out):
+        with patch.dict(CommentMigration.column_description, {
+            'author': is_a(Author, search_attr="id", fk=True, prefetch=True)}):
+
+            Migrator.migrate(commit=True)
+            self.assertEqual(get.call_count, 0)
+            clean.assert_called
+            self.assertEqual(len(CommentMigration.relation_cache[Author]), 10)
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch.object(PostMigration, 'cleanup_relation_cache')
+    @patch.object(Comment.objects, 'get')
+    @run_migrations(AuthorMigration, CommentMigration, PostMigration)
+    def test_prefetching_m2m(self, get, clean, err, out):
+        with patch.dict(PostMigration.column_description, {
+            'author': is_a(Author, search_attr="id", fk=True),
+            'comments':
+                is_a(Comment, search_attr="id", m2m=True, delimiter=",", prefetch=True)
+            }):
+
+            Migrator.migrate(commit=True)
+            self.assertEqual(get.call_count, 0)
+            clean.assert_called
 
     @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
