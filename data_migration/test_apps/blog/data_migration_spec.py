@@ -41,8 +41,9 @@ class PostMigration(BaseMigration):
     model = Post
     depends_on = [ Author, Comment ]
     column_description = {
-        'author': is_a(Author, search_attr="id", fk=True),
-        'comments': is_a(Comment, search_attr="id", m2m=True, delimiter=",")
+        'author': is_a(Author, search_attr="id", fk=True, prefetch=False),
+        'comments': is_a(Comment, search_attr="id", m2m=True,
+                         delimiter=",", prefetch=False)
     }
 
     @classmethod
@@ -64,7 +65,8 @@ class CommentMigration(BaseMigration):
     model = Comment
     depends_on = [ Author ]
     column_description = {
-        'author': is_a(Author, search_attr="id", fk=True, skip_missing=True),
+        'author': is_a(Author, search_attr="id", fk=True,
+                       skip_missing=True, prefetch=False),
     }
 
     @classmethod

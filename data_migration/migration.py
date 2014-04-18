@@ -16,7 +16,7 @@ import re
 
 def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
                 exclude=False, delimiter=';', skip_missing=False,
-                prefetch=False, assign_by_id=False):
+                prefetch=True, assign_by_id=False):
     """
     Generates a uniform set of information out of the supplied data and does
     some validations. This function is used to build the `column_description`

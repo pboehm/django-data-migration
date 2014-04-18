@@ -109,7 +109,7 @@ class IsATest(TestCase):
             'o2o': False,
             'exclude': False,
             'fk': True,
-            'prefetch': False,
+            'prefetch': True,
             'assign_by_id': False
         })
 
@@ -135,13 +135,13 @@ class IsATest(TestCase):
             'o2o': False,
             'exclude': True,
             'fk': False,
-            'prefetch': False,
+            'prefetch': True,
             'assign_by_id': False
         })
 
     def test_performance_options(self):
-        attr = is_a(User, 'username', fk=True, prefetch=True, assign_by_id=True)
-        self.assertEqual(attr['prefetch'], True)
+        attr = is_a(User, 'username', fk=True, prefetch=False, assign_by_id=True)
+        self.assertEqual(attr['prefetch'], False)
         self.assertEqual(attr['assign_by_id'], True)
 
 
