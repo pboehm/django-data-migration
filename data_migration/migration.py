@@ -15,7 +15,8 @@ import inspect
 import re
 
 def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
-                exclude=False, delimiter=';', skip_missing=False):
+                exclude=False, delimiter=';', skip_missing=False,
+                prefetch=True, assign_by_id=False):
     """
     Generates a uniform set of information out of the supplied data and does
     some validations. This function is used to build the `column_description`
@@ -38,6 +39,14 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
                          relation (`fk`, `m2m` or `o2o`) can not be found. If
                          set to `True`, missing elements are ignored. Otherwise
                          an exception is raised.
+    :param prefetch: If set to True, this will prefetch all existing instances
+                     from the related model into a lookup cache, so that less
+                     database queries will be made.
+    :param assign_by_id: This will assign the related objects as Primary Key
+                         values (int) instead of whole objects. This
+                         decreases the memory usage but has a drawback, because
+                         the related object is not available until save() has
+                         been called on the model.
     """
 
     if exclude is not True:
@@ -54,9 +63,14 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
         if len([ e for e in [fk, m2m, o2o] if e ]) != 1:
             raise ImproperlyConfigured('a column has to be either `fk`, `m2m` or `o2o`')
 
+        if assign_by_id and not prefetch:
+            raise ImproperlyConfigured(
+                    'assign_by_id is only allowed with prefetch=True')
+
     return { 'm2m': m2m, 'klass': klass, 'fk': fk, 'o2o': o2o,
              'attr': search_attr, 'exclude': exclude, 'delimiter': delimiter,
-             'skip_missing': skip_missing,
+             'skip_missing': skip_missing, 'prefetch': prefetch,
+             'assign_by_id': assign_by_id
             }
 
 
@@ -98,6 +112,10 @@ class Migration(object):
     #:             `True`
     search_attr = None
 
+    # lookup cache which decreases the number of issued SQL queries
+    # dramatically by prefetching all related objects
+    relation_cache = {}
+
     #########
     # Hooks #
     #########
@@ -118,7 +136,7 @@ class Migration(object):
         """Is called right before the migrated instance is saved.
 
         Do the changes, that make the instance valid, in this hook.
-        
+
         If the instance should not be committed, e.g. due to a runtime check
         failing, you may return False which will prevent the model's save
         method and after_save hooks from being called.
@@ -337,14 +355,17 @@ class Migration(object):
             if fieldname in self.column_description:
                 desc = self.column_description[fieldname]
 
-                if desc['exclude'] == True:
+                if desc['exclude']:
                     continue
 
-                elif desc['fk'] == True or desc['o2o'] == True:
+                elif desc['fk'] or desc['o2o']:
                     instance = self.get_object(desc, data)
+                    if desc['assign_by_id']:
+                        fieldname += "_id"
+
                     constructor_data[fieldname] = instance
 
-                elif desc['m2m'] == True:
+                elif desc['m2m']:
                     if data is None:
                         continue
 
@@ -366,14 +387,74 @@ class Migration(object):
 
     @classmethod
     def get_object(self, desc, value):
-        criteria = { desc['attr']: value }
+        klass = desc['klass']
+        attr  = desc['attr']
+
         try:
-            return desc['klass'].objects.get(**criteria)
+            if desc['prefetch']:
+
+                # build up relation cache
+                if klass not in self.relation_cache:
+                    self.buildup_relation_cache(klass, attr, value,
+                                                desc['assign_by_id'])
+
+                # get the instance out of relation cache
+                inst = self.relation_cache[klass].get(value, None)
+                if inst:
+                    return inst
+
+                raise ObjectDoesNotExist(
+                    "%s matching query (%s=%s) does not exist in relation cache." % (
+                        klass.__name__, attr, value))
+
+            else:
+                # get the related object out of the DB
+                return klass.objects.get(**{ attr: value })
+
         except ObjectDoesNotExist as e:
             if desc['skip_missing']:
                 return None
             else:
                 raise
+
+
+    @classmethod
+    def buildup_relation_cache(self, klass, attr, value, assign_by_id):
+        """this builds up the relation cache for the supplied supplied class
+        """
+
+        # we have to use the right type as the relation_cache key
+        # because the attr could be in the wrong type when it comes from
+        # the sql query
+        type_of_attr = type(value)
+
+        if assign_by_id:
+            # get a mapping from attr to pk which is more memory
+            # efficient as full object construction
+            cache = dict(
+                ( type_of_attr(left), right )
+                    for left, right in
+                        klass.objects.all().values_list(attr, 'pk')
+            )
+
+        else:
+            # get a mapping with full objects
+            cache = dict(
+                ( type_of_attr(inst.__getattribute__(attr)), inst )
+                    for inst in klass.objects.all()
+            )
+
+        self.relation_cache[klass] = cache
+
+
+    @classmethod
+    def cleanup_relation_cache(self):
+        """
+        This deletes the relation cache as it is a class-level variable which
+        is not garbage collected otherwise. Not cleaning up this cache after
+        usage can lead to serious memory usage.
+        """
+        self.relation_cache = {}
 
 
     @classmethod
@@ -491,6 +572,7 @@ class Migrator(object):
                         print(("Query for %s: " % (migration)) + migration.query)
 
                     migration.migrate()
+                    migration.cleanup_relation_cache()
 
                 if not commit:
                     raise NotCommitBreak("nothing has changed")

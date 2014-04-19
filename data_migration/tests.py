@@ -36,9 +36,19 @@ def install_apps(apps):
 
 
 def run_migrations(*migrations):
+    """ this decorator should be placed on top of all other decorators as it
+    calls methods on migrations, which could be patched by decorators called
+    after it
+    """
     def real_decorator(function):
         def wrapper(*args, **kwargs):
             with patch.object(Migration, '__subclasses__') as method:
+
+                # cleanup relation caches as it could be compromised by
+                # previous tests
+                for mig in migrations:
+                    mig.cleanup_relation_cache()
+
                 method.return_value = migrations
                 function(*args, **kwargs)
         return wrapper
@@ -109,6 +119,8 @@ class IsATest(TestCase):
             'o2o': False,
             'exclude': False,
             'fk': True,
+            'prefetch': True,
+            'assign_by_id': False
         })
 
     def test_that_class_and_attr_has_to_be_present(self):
@@ -133,7 +145,19 @@ class IsATest(TestCase):
             'o2o': False,
             'exclude': True,
             'fk': False,
+            'prefetch': True,
+            'assign_by_id': False
         })
+
+    def test_performance_options(self):
+        attr = is_a(User, 'username', fk=True, assign_by_id=True)
+        self.assertEqual(attr['prefetch'], True)
+        self.assertEqual(attr['assign_by_id'], True)
+
+    def test_assign_by_id_is_only_allowed_with_prefetching(self):
+        with self.assertRaises(ImproperlyConfigured):
+            is_a(User, 'username', fk=True, prefetch=False, assign_by_id=True)
+
 
 from datetime import datetime
 from django.core import management
@@ -163,9 +187,9 @@ class MigrationTest(TransactionTestCase):
             os.unlink(self.db_path)
 
 
-    @patch('sys.stdout', new_callable=StringIO)
     @run_migrations(AuthorMigration, PostMigration, CommentMigration)
-    def test_description(self, stdout):
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_normal_migration(self, stdout):
         Migrator.migrate(commit=True)
 
         self.assertEqual(Author.objects.count(), 10)
@@ -179,13 +203,13 @@ class MigrationTest(TransactionTestCase):
         self.assertEqual(post9.posted, datetime(2014, 10, 13, 8, 36, 59))
 
 
+    @run_migrations(AuthorMigration)
     @patch.object(AuthorMigration, 'hook_update_existing')
     @patch.object(AuthorMigration, 'hook_after_all')
     @patch.object(AuthorMigration, 'hook_after_save')
     @patch.object(AuthorMigration, 'hook_before_transformation')
     @patch.object(AuthorMigration, 'hook_before_all')
     @patch('sys.stdout', new_callable=StringIO)
-    @run_migrations(AuthorMigration)
     def test_hook_calling(self, stdout, bef_all, bef_trans,
                           aft_save, aft_all, exist):
         Migrator.migrate(commit=True)
@@ -199,12 +223,13 @@ class MigrationTest(TransactionTestCase):
         self.assertEqual(AppliedMigration.objects.count(), 1)
 
 
+    @run_migrations(AuthorMigration)
     @patch.object(AuthorMigration, 'hook_after_save')
     @patch.object(AuthorMigration, 'hook_update_existing')
     @patch('sys.stdout', new_callable=StringIO)
-    @run_migrations(AuthorMigration)
     def test_updatable_migrations(self, stdout, exist, aft_save):
         Migrator.migrate(commit=True)
+
         Author.objects.get(id=10).delete()
         self.assertFalse(exist.called)
         self.assertEqual(Author.objects.count(), 9)
@@ -216,10 +241,10 @@ class MigrationTest(TransactionTestCase):
         self.assertEqual(Author.objects.count(), 10)
 
 
+    @run_migrations(AuthorMigration)
     @patch.object(AuthorMigration, 'hook_row_count')
     @patch('sys.stdout', new_callable=StringIO)
     @patch('sys.stderr', new_callable=StringIO)
-    @run_migrations(AuthorMigration)
     def test_row_count_hook(self, err, out, hook):
         hook.side_effect = lambda conn, cursor: 55555
 
@@ -231,10 +256,10 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue("1/55555" in out.getvalue())
 
 
+    @run_migrations(AuthorMigration, CommentMigration)
     @patch.object(CommentMigration, 'hook_before_save')
     @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
-    @run_migrations(AuthorMigration, CommentMigration)
     def test_error_handling_default_behaviour(self, out, err, hook):
         hook.side_effect = lambda instance, row: raise_(ValueError())
 
@@ -245,11 +270,11 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue("Error: The following row produces an" in output)
 
 
+    @run_migrations(AuthorMigration, CommentMigration)
     @patch.object(CommentMigration, 'hook_error_creating_instance')
     @patch.object(CommentMigration, 'hook_before_save')
     @patch('sys.stdout', new_callable=StringIO)
     @patch('sys.stderr', new_callable=StringIO)
-    @run_migrations(AuthorMigration, CommentMigration)
     def test_error_handling_hook_is_called(self, err, out, hook, error):
         hook.side_effect = lambda instance, row: raise_(ValueError())
         error.side_effect = None
@@ -263,9 +288,79 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue(isinstance(row, dict))
 
 
+    @run_migrations(AuthorMigration, CommentMigration)
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch.object(CommentMigration, 'cleanup_relation_cache')
+    @patch.object(Author.objects, 'get')
+    def test_prefetching_fk(self, get, clean, err, out):
+        with patch.dict(CommentMigration.column_description, {
+            'author': is_a(Author, search_attr="id", fk=True, prefetch=True)}):
+
+            Migrator.migrate(commit=True)
+            self.assertEqual(get.call_count, 0)
+            clean.assert_called
+            self.assertEqual(len(CommentMigration.relation_cache[Author]), 10)
+
+    @run_migrations(AuthorMigration, CommentMigration, PostMigration)
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch.object(PostMigration, 'cleanup_relation_cache')
+    @patch.object(Comment.objects, 'get')
+    def test_prefetching_m2m(self, get, clean, err, out):
+        with patch.dict(PostMigration.column_description, {
+            'author': is_a(Author, search_attr="id", fk=True),
+            'comments':
+                is_a(Comment, search_attr="id", m2m=True, delimiter=",", prefetch=True)
+            }):
+
+            Migrator.migrate(commit=True)
+            self.assertEqual(get.call_count, 0)
+            clean.assert_called
+
+
+    @run_migrations(AuthorMigration, CommentMigration)
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch.object(CommentMigration, 'cleanup_relation_cache')
+    @patch.object(CommentMigration, 'hook_before_save')
+    def test_assign_by_id_fk(self, before_save, clean, err, out):
+
+        with patch.dict(CommentMigration.column_description, {
+            'author': is_a(Author, search_attr="id", fk=True,
+                           assign_by_id=True, prefetch=True)}):
+
+            def side_effect(instance, row):
+                assert isinstance(instance.author_id, int)
+
+            before_save.side_effect = side_effect
+            Migrator.migrate(commit=True)
+            for val in CommentMigration.relation_cache[Author].values():
+                self.assertTrue(isinstance(val, int))
+
+
+    @run_migrations(AuthorMigration, CommentMigration, PostMigration)
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    @patch.object(Comment.objects, 'get')
+    @patch.object(PostMigration, 'cleanup_relation_cache')
+    def test_assign_by_id_m2m(self, clean, get, err, out):
+        with patch.dict(PostMigration.column_description, {
+            'author': is_a(Author, search_attr="id", fk=True, prefetch=True),
+            'comments':
+                is_a(Comment, search_attr="id", m2m=True, delimiter=",",
+                     prefetch=True, assign_by_id=True)
+            }):
+
+            Migrator.migrate(commit=True)
+            self.assertEqual(get.call_count, 0)
+            for val in PostMigration.relation_cache[Comment].values():
+                self.assertTrue(isinstance(val, int))
+
+
+    @run_migrations(AuthorMigration)
     @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
-    @run_migrations(AuthorMigration)
     def test_calling_management_command(self, stdout, stderr):
         management.call_command('migrate_legacy_data', commit_changes=True)
 
@@ -275,9 +370,9 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue("Migrating element" in stdout.getvalue())
 
 
+    @run_migrations(AuthorMigration)
     @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
-    @run_migrations(AuthorMigration)
     def test_calling_deprecated_management_command(self, stdout, stderr):
         management.call_command('migrate_this_shit', commit_changes=True)
 
@@ -287,9 +382,9 @@ class MigrationTest(TransactionTestCase):
         self.assertTrue("Migrating element" in stdout.getvalue())
 
 
+    @run_migrations(AuthorMigration, CommentMigration)
     @patch.object(AuthorMigration, 'hook_after_all')
     @patch('sys.stdout', new_callable=StringIO)
-    @run_migrations(AuthorMigration, CommentMigration)
     def test_skip_missing(self, stdout, aft_all):
         aft_all.side_effect = lambda: Author.objects.get(id=3).delete()
 

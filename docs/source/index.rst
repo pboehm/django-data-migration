@@ -20,4 +20,5 @@ Contents:
    writing_migrations
    migrating
    troubleshooting
+   changelog
 
