@@ -63,6 +63,10 @@ def is_a(klass=None, search_attr=None, fk=False, m2m=False, o2o=False,
         if len([ e for e in [fk, m2m, o2o] if e ]) != 1:
             raise ImproperlyConfigured('a column has to be either `fk`, `m2m` or `o2o`')
 
+        if assign_by_id and not prefetch:
+            raise ImproperlyConfigured(
+                    'assign_by_id is only allowed with prefetch=True')
+
     return { 'm2m': m2m, 'klass': klass, 'fk': fk, 'o2o': o2o,
              'attr': search_attr, 'exclude': exclude, 'delimiter': delimiter,
              'skip_missing': skip_missing, 'prefetch': prefetch,
@@ -351,14 +355,17 @@ class Migration(object):
             if fieldname in self.column_description:
                 desc = self.column_description[fieldname]
 
-                if desc['exclude'] == True:
+                if desc['exclude']:
                     continue
 
-                elif desc['fk'] == True or desc['o2o'] == True:
+                elif desc['fk'] or desc['o2o']:
                     instance = self.get_object(desc, data)
+                    if desc['assign_by_id']:
+                        fieldname += "_id"
+
                     constructor_data[fieldname] = instance
 
-                elif desc['m2m'] == True:
+                elif desc['m2m']:
                     if data is None:
                         continue
 
@@ -392,10 +399,24 @@ class Migration(object):
                     # the sql query
                     type_of_attr = type(value)
 
-                    self.relation_cache[klass] = dict(
-                        ( type_of_attr(inst.__getattribute__(attr)), inst )
-                            for inst in klass.objects.all()
-                    )
+                    if desc['assign_by_id']:
+                        # get a mapping from attr to pk which is more memory
+                        # efficient as full object construction
+                        cache = dict(
+                            ( type_of_attr(left), right )
+                                for left, right in
+                                    klass.objects.all().values_list(attr, 'pk')
+                        )
+
+                    else:
+                        # get a mapping with full objects
+                        cache = dict(
+                            ( type_of_attr(inst.__getattribute__(attr)), inst )
+                                for inst in klass.objects.all()
+                        )
+
+                    self.relation_cache[klass] = cache
+
 
                 # get the instance out of relation cache
                 inst = self.relation_cache[klass].get(value, None)
