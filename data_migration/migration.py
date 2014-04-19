@@ -392,31 +392,11 @@ class Migration(object):
 
         try:
             if desc['prefetch']:
+
                 # build up relation cache
                 if klass not in self.relation_cache:
-                    # we have to use the right type as the relation_cache key
-                    # because the attr could be in the wrong when it comes from
-                    # the sql query
-                    type_of_attr = type(value)
-
-                    if desc['assign_by_id']:
-                        # get a mapping from attr to pk which is more memory
-                        # efficient as full object construction
-                        cache = dict(
-                            ( type_of_attr(left), right )
-                                for left, right in
-                                    klass.objects.all().values_list(attr, 'pk')
-                        )
-
-                    else:
-                        # get a mapping with full objects
-                        cache = dict(
-                            ( type_of_attr(inst.__getattribute__(attr)), inst )
-                                for inst in klass.objects.all()
-                        )
-
-                    self.relation_cache[klass] = cache
-
+                    self.buildup_relation_cache(klass, attr, value,
+                                                desc['assign_by_id'])
 
                 # get the instance out of relation cache
                 inst = self.relation_cache[klass].get(value, None)
@@ -437,9 +417,45 @@ class Migration(object):
             else:
                 raise
 
+
+    @classmethod
+    def buildup_relation_cache(self, klass, attr, value, assign_by_id):
+        """this builds up the relation cache for the supplied supplied class
+        """
+
+        # we have to use the right type as the relation_cache key
+        # because the attr could be in the wrong type when it comes from
+        # the sql query
+        type_of_attr = type(value)
+
+        if assign_by_id:
+            # get a mapping from attr to pk which is more memory
+            # efficient as full object construction
+            cache = dict(
+                ( type_of_attr(left), right )
+                    for left, right in
+                        klass.objects.all().values_list(attr, 'pk')
+            )
+
+        else:
+            # get a mapping with full objects
+            cache = dict(
+                ( type_of_attr(inst.__getattribute__(attr)), inst )
+                    for inst in klass.objects.all()
+            )
+
+        self.relation_cache[klass] = cache
+
+
     @classmethod
     def cleanup_relation_cache(self):
+        """
+        This deletes the relation cache as it is a class-level variable which
+        is not garbage collected otherwise. Not cleaning up this cache after
+        usage can lead to serious memory usage.
+        """
         self.relation_cache = {}
+
 
     @classmethod
     def create_m2ms(self, instance, m2ms):
