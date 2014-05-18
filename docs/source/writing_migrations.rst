@@ -122,18 +122,25 @@ You have to install the corresponding PostgreSQL-Python-driver by executing::
 
     pip install psycopg2
 
+
+.. important:: a version of psycopg >= 2.5 is required as it allows the 
+               ``cursor_factory`` to be specified through ``connect()`` 
+               instead of ``get_cursor()``.
+
+
 The following code implements an example database connection for PostgreSQL.
 
 .. code-block:: python
 
     import psycopg2
+    import psycopg2.extras
 
     class BaseMigration(Migration):
 
         @classmethod
         def open_db_connection(self):
             return psycopg2.connect(......,
-                cursor_factory=psycopg2.extras.DictCursor
+                cursor_factory=psycopg2.extras.RealDictCursor
             )
 
 MS-SQL
