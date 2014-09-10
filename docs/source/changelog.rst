@@ -3,6 +3,13 @@
 Changelog
 =========
 
+Version 0.2.1
++++++++++++++
+
+* ``atomic()`` is now used instead of ``commit_on_success()`` when it is
+  available. This prevents deprecation warnings that are displayed with Django
+  >= 1.7.
+
 Version 0.2.0
 +++++++++++++
 
