@@ -13,8 +13,9 @@ This extension is tested automatically against:
 
 -  Django 1.5
 -  Django 1.6
+-  Django 1.7
 
-on Python 2.7 and 3.3.
+on Python 2.7, 3.3 and 3.4.
 
 Python 3.2 is not supported, due to a `SyntaxError in the future
 library <https://github.com/PythonCharmers/python-future/issues/29>`__

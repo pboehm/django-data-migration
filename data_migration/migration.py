@@ -552,6 +552,12 @@ class NotCommitBreak(Exception):
 from django.db import transaction
 import networkx as nx
 
+# get the best available context manager for the transaction handling
+atomic = getattr(transaction, "atomic", None)
+if not atomic:
+    atomic = transaction.commit_on_success
+
+
 class Migrator(object):
     """
     this class encapsulates the migration process for all existing migration
@@ -561,7 +567,7 @@ class Migrator(object):
     @classmethod
     def migrate(self, commit=False, log_queries=False):
         try:
-            with transaction.commit_on_success():
+            with atomic():
                 for migration in self.sorted_migrations():
 
                     if migration.skip is True:
